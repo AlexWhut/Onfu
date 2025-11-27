@@ -13,6 +13,6 @@ fun testFirebaseConnection() {
             Log.d("FIREBASE", "Conectado correctamente ✔")
         }
         .addOnFailureListener {
-            Log.e("FIREBASE", "Error ❌", it)
+            Log.e("FIREBASE", "Error", it)
         }
 }

@@ -32,22 +32,29 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "21"
     }
 
     buildFeatures {
         compose = true
+        viewBinding = true
     }
 }
 
 dependencies {
     // Android & Compose
     implementation(libs.androidx.core.ktx)
+    // AppCompat (needed for AppCompatActivity, fragments, and traditional views)
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    // Fragment KTX for fragment transactions and utilities
+    implementation("androidx.fragment:fragment-ktx:1.6.1")
+    // ConstraintLayout for XML ConstraintLayout attributes
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
