@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 
     // BoM de Firebase (solo una vez)
