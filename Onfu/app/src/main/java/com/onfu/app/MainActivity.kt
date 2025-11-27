@@ -16,6 +16,13 @@ import com.onfu.app.ui.theme.OnfuTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
+        fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            setContent {
+                AppNavHost()
+            }
+        }
+
         // Sirve para probar la coneccion con Firebase
         testFirebaseConnection()
 
