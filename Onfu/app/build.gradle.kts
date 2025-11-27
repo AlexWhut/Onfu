@@ -76,6 +76,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-analytics")
+    // Google Sign-In (para obtener idToken y correo)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
     // Tests
     testImplementation(libs.junit)

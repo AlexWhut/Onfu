@@ -23,41 +23,6 @@ class MainActivity : AppCompatActivity() {
                 .commit()
         }
 
-        binding.btnLogin.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, LoginFragment())
-                .commit()
-        }
-
-        binding.btnRegister.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Register"))
-                .commit()
-        }
-
-        binding.btnFeed.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Feed"))
-                .commit()
-        }
-
-        binding.btnHome.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Home"))
-                .commit()
-        }
-
-        binding.btnSearch.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Search"))
-                .commit()
-        }
-
-        binding.btnProfile.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Profile"))
-                .commit()
-        }
     }
 }
 
