@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Onfu</string>
-    <!-- Añadir el client ID web OAuth2 de Firebase (reemplazar en entorno local) -->
-    <string name="default_web_client_id">REPLACE_WITH_WEB_CLIENT_ID</string>
+    <!-- Client ID web OAuth2 (copiado de app/google-services.json) -->
+    <string name="default_web_client_id">1020627430004-g88e9pufpp9lt3k1l9dqcrggf19kesic.apps.googleusercontent.com</string>
 </resources>
