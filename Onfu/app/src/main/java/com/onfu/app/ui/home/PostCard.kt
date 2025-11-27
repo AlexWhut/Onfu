@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.onfu.app.domain.models.Post
 
+
 @Composable
 fun PostCard(post: Post) {
     Card(modifier = Modifier
