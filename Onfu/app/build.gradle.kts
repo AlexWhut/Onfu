@@ -7,6 +7,11 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Force Kotlin/Gradle to use Java 21 toolchain for compilation (works even if system JDK is newer)
+kotlin {
+    jvmToolchain(21)
+}
+
 android {
     namespace = "com.onfu.app"
     compileSdk = 36
@@ -65,6 +70,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // RecyclerView for legacy XML-based lists
+    implementation("androidx.recyclerview:recyclerview:1.3.1")
 
 
     // BoM de Firebase (solo una vez)

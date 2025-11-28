@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
         // Only add the default fragment the first time
         if (savedInstanceState == null) {
+            // Start the app at the Login screen by default.
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, LoginFragment())
                 .commit()

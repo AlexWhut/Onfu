@@ -19,6 +19,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.onfu.app.R
 import com.onfu.app.databinding.FragmentLoginBinding
+import com.onfu.app.ui.fragments.HomeFragment
 
 class LoginFragment : Fragment() {
 
@@ -172,9 +173,9 @@ class LoginFragment : Fragment() {
         firestore.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    // already has profile -> go to Home
+                    // already has profile -> go to HomeFragment (host with bottom nav)
                     parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Home"))
+                        .replace(R.id.fragment_container, HomeFragment())
                         .commit()
                 } else {
                     // go to prehome to set userid/name
