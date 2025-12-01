@@ -51,5 +51,13 @@ class HomeFragment : Fragment() {
                 .replace(R.id.home_child_container, com.onfu.app.ui.feed.FeedFragment())
                 .commit()
         }
+
+        // Add button (center '+') opens UploadFragment
+        view.findViewById<View>(R.id.nav_add).setOnClickListener {
+            childFragmentManager.beginTransaction()
+                .replace(R.id.home_child_container, UploadFragment())
+                .addToBackStack("upload")
+                .commit()
+        }
     }
 }

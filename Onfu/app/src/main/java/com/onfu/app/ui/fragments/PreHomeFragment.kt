@@ -85,9 +85,9 @@ class PreHomeFragment : Fragment() {
 
                     firestore.collection("users").document(uid).set(data)
                         .addOnSuccessListener {
-                            // Navigate to Home
+                            // Navigate to HomeFragment (host with bottom nav)
                             parentFragmentManager.beginTransaction()
-                                .replace(R.id.fragment_container, PlaceholderFragment.newInstance("Home"))
+                                .replace(R.id.fragment_container, HomeFragment())
                                 .commit()
                         }
                         .addOnFailureListener { e ->

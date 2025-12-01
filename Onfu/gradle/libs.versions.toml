@@ -36,8 +36,8 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics", version.ref = "firebaseAnalytics" }
-firebase-bom = { group = "(platform(", name = "firebase-bom", version.ref = "firebaseBom" }
-xplatform_com-firebase-bom = { group = "(platform(", name = "firebase-bom", version.ref = "firebaseBomVersion" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+xplatform_com-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBomVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

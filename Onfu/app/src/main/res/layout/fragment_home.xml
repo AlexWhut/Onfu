@@ -43,6 +43,15 @@
             android:contentDescription="search" />
 
         <ImageButton
+            android:id="@+id/nav_add"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:src="@android:drawable/ic_input_add"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="add" />
+
+        <ImageButton
             android:id="@+id/nav_messages"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -61,5 +70,7 @@
             android:contentDescription="profile" />
 
     </LinearLayout>
+
+    <!-- Note: previously had a centered overlapping add button here. Removed to avoid duplicate ID `nav_add`. -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

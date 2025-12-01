@@ -1,17 +1,28 @@
 package com.onfu.app.ui.feed
 
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.widget.ImageView
 import android.widget.TextView
+import coil.load
+import coil.transform.CircleCropTransformation
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.onfu.app.ui.feed.GridSpacingItemDecoration
 import com.onfu.app.R
 import com.onfu.app.databinding.FragmentFeedBinding
 import com.onfu.app.domain.models.Post
@@ -29,6 +40,30 @@ class FeedFragment : Fragment() {
     private var _binding: FragmentFeedBinding? = null
     private val binding get() = _binding!!
 
+    // Avatar change helpers
+    private var selectedAvatarUri: Uri? = null
+    private val pickAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            selectedAvatarUri = it
+            // show preview immediately
+            binding.profileAvatar.load(it) {
+                placeholder(R.drawable.avatar_placeholder)
+                error(R.drawable.avatar_placeholder)
+                transformations(CircleCropTransformation())
+            }
+            // start upload
+            uploadAvatarUri(it)
+        }
+    }
+
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            pickAvatarLauncher.launch("image/*")
+        } else {
+            Toast.makeText(requireContext(), "Permiso denegado: no se puede acceder a las fotos", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -41,13 +76,24 @@ class FeedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Setup RecyclerView: vertical list of posts
-        val rv = binding.rvPosts
-        rv.layoutManager = LinearLayoutManager(requireContext())
+        // --- Start of Changes ---
+
+        // 1. Declare auth and firestore instances once at the top
+        val auth = FirebaseAuth.getInstance()
+        val firestore = FirebaseFirestore.getInstance()
+        val currentUid = auth.currentUser?.uid
+
+        // Setup RecyclerView
+        val rv = binding.rvFeed
+        val spanCount = 3
+        val spacingDp = 2
+        val spacingPx = (spacingDp * resources.displayMetrics.density).toInt()
+        rv.layoutManager = GridLayoutManager(requireContext(), spanCount)
+        rv.addItemDecoration(GridSpacingItemDecoration(spanCount, spacingPx, false))
 
         // Sample data - replace with real repository / ViewModel
         val sample = listOf(
-            Post(ownerId = "u1", title = "At the beach", description = "Nice day", imageUrl = "", id = "p1"),
+            Post(ownerId = "u1", title = "At the beach", description = "Nice day", imageUrl = "...", id = "p1"),
             Post(ownerId = "u2", title = "Mountain", description = "Hike", imageUrl = "", id = "p2"),
             Post(ownerId = "u3", title = "City", description = "Night lights", imageUrl = "", id = "p3")
         )
@@ -56,27 +102,92 @@ class FeedFragment : Fragment() {
             onPostClicked(post)
         }
 
-        // Load and display the current user's username in the profile header
-        val auth = FirebaseAuth.getInstance()
-        val firestore = FirebaseFirestore.getInstance()
-        val uid = auth.currentUser?.uid
-        if (uid != null) {
-            firestore.collection("users").document(uid).get()
-                .addOnSuccessListener { doc ->
-                    val username = doc.getString("userid")
-                        ?: doc.getString("username")
-                        ?: doc.getString("displayName")
-                        ?: auth.currentUser?.displayName
-                        ?: auth.currentUser?.email
-                        ?: "Username"
-                    binding.profileUsername.text = username
+        // Live update counts and profile header logic
+        if (currentUid != null) {
+            // Posts count
+            firestore.collection("posts").whereEqualTo("ownerId", currentUid)
+                .addSnapshotListener { snap, e ->
+                    if (e != null) {
+                        // permission denied or other error
+                        binding.tvPostsCount.text = "0"
+                    } else {
+                        binding.tvPostsCount.text = (snap?.size() ?: 0).toString()
+                    }
                 }
-                .addOnFailureListener {
-                    binding.profileUsername.text = auth.currentUser?.displayName ?: auth.currentUser?.email ?: "Username"
+
+            // Followers count
+            firestore.collection("users").document(currentUid).collection("followers")
+                .addSnapshotListener { snap, e ->
+                    if (e != null) {
+                        binding.tvFollowersCount.text = "0"
+                    } else {
+                        binding.tvFollowersCount.text = (snap?.size() ?: 0).toString()
+                    }
+                }
+
+            // Following count
+            firestore.collection("users").document(currentUid).collection("following")
+                .addSnapshotListener { snap, e ->
+                    if (e != null) {
+                        binding.tvFollowingCount.text = "0"
+                    } else {
+                        binding.tvFollowingCount.text = (snap?.size() ?: 0).toString()
+                    }
+                }
+
+            // Click listeners for followers/following
+            binding.tvFollowersCount.setOnClickListener {
+                UserListDialogFragment.newInstance("followers", currentUid)
+                    .show(parentFragmentManager, "user_list")
+            }
+            binding.tvFollowingCount.setOnClickListener {
+                UserListDialogFragment.newInstance("following", currentUid)
+                    .show(parentFragmentManager, "user_list")
+            }
+
+                // Allow tapping avatar to change profile photo
+                binding.profileAvatar.setOnClickListener {
+                    ensurePermissionAndPickAvatar()
+                }
+
+            // Listen to user document to display name and avatar updates in real time
+            firestore.collection("users").document(currentUid)
+                .addSnapshotListener { doc, e ->
+                    if (e != null || doc == null || !doc.exists()) {
+                        val fallback = auth.currentUser?.displayName ?: auth.currentUser?.email ?: "username"
+                        binding.profileDisplayName.text = fallback
+                        binding.profileUsername.text = "@${fallback}"
+                        binding.profileAvatar.setImageResource(R.drawable.avatar_placeholder)
+                        return@addSnapshotListener
+                    }
+
+                    val displayName = doc.getString("visibleName") ?: doc.getString("displayName")
+                    val userid = doc.getString("userid")
+                        ?: doc.getString("username")
+                        ?: auth.currentUser?.email
+                        ?: "username"
+
+                    binding.profileDisplayName.text = displayName ?: userid
+                    binding.profileUsername.text = "@${userid}"
+
+                    val photoUrl = doc.getString("photoUrl") ?: auth.currentUser?.photoUrl?.toString()
+                    if (!photoUrl.isNullOrBlank()) {
+                        binding.profileAvatar.load(photoUrl) {
+                            placeholder(R.drawable.avatar_placeholder)
+                            error(R.drawable.avatar_placeholder)
+                            transformations(CircleCropTransformation())
+                        }
+                    } else {
+                        binding.profileAvatar.setImageResource(R.drawable.avatar_placeholder)
+                    }
                 }
         } else {
-            binding.profileUsername.text = auth.currentUser?.displayName ?: auth.currentUser?.email ?: "Username"
+            // Fallback for when there is no logged-in user
+            binding.profileDisplayName.text = "Username"
+            binding.profileUsername.text = "@username"
         }
+
+        // --- End of Changes ---
     }
 
     private fun onPostClicked(post: Post) {
@@ -86,6 +197,68 @@ class FeedFragment : Fragment() {
         // findNavController().navigate(action)
 
         Toast.makeText(requireContext(), "Open post ${post.title}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun ensurePermissionAndPickAvatar() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+
+        if (ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED) {
+            pickAvatarLauncher.launch("image/*")
+        } else {
+            permissionLauncher.launch(permission)
+        }
+    }
+
+    private fun uploadAvatarUri(uri: Uri) {
+        val auth = FirebaseAuth.getInstance()
+        val uid = auth.currentUser?.uid ?: run {
+            Toast.makeText(requireContext(), "No hay usuario autenticado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        Toast.makeText(requireContext(), "Subiendo foto de perfil...", Toast.LENGTH_SHORT).show()
+
+        val storageRef = FirebaseStorage.getInstance().reference.child("avatars/$uid/profile_${System.currentTimeMillis()}.jpg")
+        val uploadTask = storageRef.putFile(uri)
+        uploadTask.addOnSuccessListener { _ ->
+            storageRef.downloadUrl
+                .addOnSuccessListener { uriDownload ->
+                    val downloadUrl = uriDownload.toString()
+                    // update Firestore (use merge to be robust)
+                    FirebaseFirestore.getInstance().collection("users").document(uid)
+                        .set(mapOf("photoUrl" to downloadUrl), com.google.firebase.firestore.SetOptions.merge())
+                        .addOnSuccessListener {
+                            // update auth profile
+                            val profileUpdates = UserProfileChangeRequest.Builder()
+                                .setPhotoUri(Uri.parse(downloadUrl))
+                                .build()
+                            auth.currentUser?.updateProfile(profileUpdates)
+
+                            // update UI immediately
+                            binding.profileAvatar.load(downloadUrl) {
+                                placeholder(R.drawable.avatar_placeholder)
+                                error(R.drawable.avatar_placeholder)
+                                transformations(CircleCropTransformation())
+                            }
+
+                            Toast.makeText(requireContext(), "Foto de perfil actualizada", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(requireContext(), "Error guardando photoUrl: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                }
+                .addOnFailureListener { e ->
+                    android.util.Log.e("FeedFragment", "Failed to fetch downloadUrl", e)
+                    Toast.makeText(requireContext(), "Failed upload: unable to get download URL: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }.addOnFailureListener { e ->
+            android.util.Log.e("FeedFragment", "Upload failed", e)
+            Toast.makeText(requireContext(), "Fallo al subir la imagen: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onDestroyView() {
@@ -99,7 +272,7 @@ class FeedFragment : Fragment() {
     ) : RecyclerView.Adapter<FeedAdapter.VH>() {
 
         inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val image: ImageView = itemView.findViewById(R.id.post_image)
+            val image: ImageView = itemView.findViewById(R.id.iv_post_image)
             val caption: TextView = itemView.findViewById(R.id.post_caption)
         }
 

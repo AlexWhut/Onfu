@@ -70,6 +70,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
     implementation("io.coil-kt:coil-compose:2.4.0")
+    // Coil ImageView extension (used by UserListDialogFragment)
+    implementation("io.coil-kt:coil:2.4.0")
 
     // RecyclerView for legacy XML-based lists
     implementation("androidx.recyclerview:recyclerview:1.3.1")
