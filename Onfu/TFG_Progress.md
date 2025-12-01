@@ -160,3 +160,59 @@ Este documento registra el progreso del proyecto, describe las tareas completada
 --- 
 
 Horas dedicadas estimadas a Phase 3: ~20-30 horas
+
+---
+
+## Fase 4 — Integraciones de Storage y estabilización de entorno (01‑Dic‑2025)
+
+**Objetivo:** Habilitar subida de foto de perfil a Firebase Storage, asegurar lectura en la app y estabilizar el entorno de build y despliegue.
+
+**Tareas y avances del día:**
+- Subida de avatar: Ajustamos el flujo en `UploadFragment` para usar el bucket configurado por Firebase (`FirebaseApp.options.storageBucket`) y rutas `avatars/{uid}/...`.
+- Reglas de Storage: Publicamos reglas que permiten escritura sólo al propietario y lectura (pública o autenticada según necesidad) en `avatars/{userId}/{**}`.
+- Placeholder: Confirmamos uso de `placeholder/error` gris para cuando `photoUrl` sea nulo.
+- Validación en consola: Verificamos la creación de la carpeta `avatars/` y la presencia de archivos en el bucket correcto.
+
+**Problemas encontrados y cómo se resolvieron:**
+- Error de build con Java 25 (`java version "25.0.1"`):
+    - Síntoma: Gradle/Kotlin DSL fallaba con `IllegalArgumentException: 25.0.1`.
+    - Causa: El sistema usaba JDK 25; el tooling del proyecto requiere JDK 21.
+    - Solución: Configuramos `JAVA_HOME` a `C:\Program Files\Java\jdk-21` y añadimos `org.gradle.java.home` en `gradle.properties`. El build pasó (BUILD SUCCESSFUL).
+- Fallo al subir imagen (404 "Object does not exist at location"):
+    - Síntoma: `StorageException` 404 al iniciar upload resumible.
+    - Causas detectadas: Bucket incorrecto y posibles llamadas al Storage Emulator sin tenerlo activo.
+    - Solución: Unificamos el bucket a `gs://onfu-fe8fd.firebasestorage.app` (consola Firebase), eliminamos el override temporal y desactivamos el uso de `useEmulator(...)` en entornos sin emulator. Tras ello, la subida funcionó y `avatars/{uid}` apareció en el bucket.
+- Reglas de Storage denegando por defecto:
+    - Síntoma: Subidas denegadas si las reglas estaban en `allow read, write: if false` global.
+    - Solución: Reglas:
+        ```
+        rules_version = '2';
+        service firebase.storage {
+            match /b/{bucket}/o {
+                match /avatars/{userId}/{allPaths=**} {
+                    allow read: if true; // o if request.auth != null
+                    allow write: if request.auth != null && request.auth.uid == userId;
+                }
+                match /{allPaths=**} { allow read, write: if false; }
+            }
+        }
+        ```
+- Problemas con push a GitHub por archivos >100MB:
+    - Síntoma: Rechazo del push (`GH001`) por incluir `app/jdk-21_windows-x64_bin.exe` y `GoogleCloudSDKInstaller.exe`.
+    - Solución: Quitamos esos binarios del índice, agregamos `.gitignore` (excluir `*.exe`, `*.zip`, `build/`, etc.) y realizamos `git push --force` tras limpiar el historial. El remoto quedó sincronizado.
+
+**Validaciones realizadas:**
+- Logcat `STORAGE_DEBUG` mostrando bucket configurado y rutas de upload correctas.
+- Visualización de `avatars/{uid}` en Firebase Console → Storage.
+- Actualización de `users/{uid}.photoUrl` en Firestore y carga de avatar en la UI.
+
+**Justificación de horas (día):** ~6-8 horas
+- Diagnóstico y fijación JDK/Gradle: 1.5-2 horas
+- Diagnóstico Storage (bucket, reglas, emulator) y correcciones: 3-4 horas
+- Limpieza repo y push: 1-2 horas
+- Verificaciones y documentación: 0.5-1 hora
+
+**Siguientes pasos:**
+- Crear drawable `avatar_placeholder` gris consistente y revisar su uso en todas las vistas.
+- Añadir prueba mínima `putBytes` para diagnóstico rápido en Storage.
+- Endurecer reglas de lectura (si se requiere autenticación) y documentar decisión.
