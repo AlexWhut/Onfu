@@ -1,3 +1,22 @@
+# Ignore binary installers and SDKs
+app/*.exe
+*.msi
+*.zip
+*.tar.gz
+*.7z
+
+# Gradle build outputs
+**/build/
+
+# Android/Studio
+.gradle/
+.idea/
+local.properties
+*.iml
+
+# OS junk
+.DS_Store
+Thumbs.db
 *.iml
 .gradle
 /local.properties
