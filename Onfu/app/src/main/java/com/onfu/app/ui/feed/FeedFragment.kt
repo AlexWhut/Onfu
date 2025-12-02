@@ -19,6 +19,12 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
+import android.app.AlertDialog
+import android.content.Context
+import android.widget.EditText
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -181,6 +187,46 @@ class FeedFragment : Fragment() {
                         binding.profileAvatar.setImageResource(R.drawable.avatar_placeholder)
                     }
                 }
+
+            // Tapping the display name opens an edit dialog (max 5 changes per day)
+            binding.profileDisplayName.setOnClickListener {
+                if (currentUid == null) {
+                    Toast.makeText(requireContext(), "No hay usuario autenticado", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (!canEditVisibleName(currentUid)) {
+                    Toast.makeText(requireContext(), "Has alcanzado el límite de 5 cambios hoy", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+
+                val edit = EditText(requireContext())
+                edit.setText(binding.profileDisplayName.text)
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Editar nombre visible")
+                    .setView(edit)
+                    .setPositiveButton("Guardar") { dialog, _ ->
+                        val newName = edit.text.toString().trim()
+                        if (newName.isEmpty()) {
+                            Toast.makeText(requireContext(), "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                            return@setPositiveButton
+                        }
+
+                        // Update Firestore (merge)
+                        firestore.collection("users").document(currentUid)
+                            .set(mapOf("visibleName" to newName), com.google.firebase.firestore.SetOptions.merge())
+                            .addOnSuccessListener {
+                                incrementEditCount(currentUid)
+                                Toast.makeText(requireContext(), "Nombre visible actualizado", Toast.LENGTH_SHORT).show()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(requireContext(), "Error actualizando nombre: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
         } else {
             // Fallback for when there is no logged-in user
             binding.profileDisplayName.text = "Username"
@@ -259,6 +305,34 @@ class FeedFragment : Fragment() {
             android.util.Log.e("FeedFragment", "Upload failed", e)
             Toast.makeText(requireContext(), "Fallo al subir la imagen: ${e.message}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    // Helpers to limit visible name edits to 5 times per day per user
+    private fun getTodayString(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        return sdf.format(Date())
+    }
+
+    private fun canEditVisibleName(uid: String): Boolean {
+        val prefs = requireContext().getSharedPreferences("onfu_prefs", Context.MODE_PRIVATE)
+        val storedDate = prefs.getString("${uid}_date", "") ?: ""
+        val storedCount = prefs.getInt("${uid}_count", 0)
+        val today = getTodayString()
+        return if (storedDate == today) {
+            storedCount < 5
+        } else {
+            true
+        }
+    }
+
+    private fun incrementEditCount(uid: String) {
+        val prefs = requireContext().getSharedPreferences("onfu_prefs", Context.MODE_PRIVATE)
+        val today = getTodayString()
+        val keyDate = "${uid}_date"
+        val keyCount = "${uid}_count"
+        val storedDate = prefs.getString(keyDate, "") ?: ""
+        val newCount = if (storedDate == today) prefs.getInt(keyCount, 0) + 1 else 1
+        prefs.edit().putString(keyDate, today).putInt(keyCount, newCount).apply()
     }
 
     override fun onDestroyView() {
