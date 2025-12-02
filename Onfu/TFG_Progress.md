@@ -104,10 +104,7 @@ Este documento registra el progreso del proyecto, describe las tareas completada
 - Separación de responsabilidades entre UI, ViewModel y repositorios/servicios, facilitando pruebas y mantenimiento.
 - Base preparada para funciones avanzadas: edición de perfil, verificación por email y control por roles.
 
-**Siguientes pasos recomendados:**
-- Añadir tests unitarios para `AuthRepository` y pruebas de UI para flujos de autenticación.
-- Mejorar la experiencia offline y la reanudación de subidas a Storage.
-- Revisar y endurecer reglas de Firestore antes de despliegue a producción.
+ 
 
 ---
 
@@ -121,7 +118,7 @@ Este documento registra el progreso del proyecto, describe las tareas completada
 ## Anexos y notas técnicas
 - Archivo `google-services.json` se mantiene fuera del control de versiones y sólo en entornos locales.
 - Para ejecutar la app localmente: abrir en Android Studio y sincronizar gradle.
-- Si se desea, puedo crear una rama con estos cambios y preparar un commit con mensaje sugerido.
+ 
 
 --- 
 
@@ -152,10 +149,7 @@ Este documento registra el progreso del proyecto, describe las tareas completada
 - **Separación de responsabilidades:** Lógica de autenticación y acceso a datos separada en repositorios/servicios, facilitando testing y mantenimiento.
 - **Preparación para features futuras:** Con perfil persistente y subida de avatares ya implementada, es sencillo añadir edición de perfil, verificación por correo, y autorización por roles.
 
-**Siguientes pasos recomendados:**
-- **Pruebas:** Añadir tests unitarios para `AuthRepository` y pruebas de UI para flujos de login/registro.
-- **Mejoras UX:** Añadir manejo de estados offline y reintentos en subidas a Storage.
-- **Seguridad:** Revisar y endurecer reglas de Firestore según necesidades de producción.
+ 
 
 --- 
 
@@ -275,7 +269,4 @@ service firebase.storage {
 - Feed imágenes-only + detalle de post: 2 horas
 - Bio editable + reglas + estabilización listeners: 1-2 horas
 
-**Siguientes pasos recomendados:**
-- Añadir contador de palabras en el diálogo de edición de bio y desactivar “Guardar” si supera 50.
-- Optimizar carga de cuadrícula con `Coil.size(1080, 1360)` para ahorrar memoria.
-- Definir si el feed será global o filtrado por usuarios seguidos.
+ 
