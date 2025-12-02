@@ -52,10 +52,10 @@ class HomeFragment : Fragment() {
                 .commit()
         }
 
-        // Add button (center '+') opens UploadFragment
+        // Add button (center '+') opens the post Upload screen (not avatar)
         view.findViewById<View>(R.id.nav_add).setOnClickListener {
             childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, UploadFragment())
+                .replace(R.id.home_child_container, com.onfu.app.ui.upload.UploadFragment())
                 .addToBackStack("upload")
                 .commit()
         }

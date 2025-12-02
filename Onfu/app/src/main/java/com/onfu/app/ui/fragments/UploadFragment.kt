@@ -79,25 +79,7 @@ class UploadFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // If we're running a debug build, point Firebase Storage to the local emulator
-        if (isAppDebuggable()) {
-            try {
-                // Emulator host for Android emulator is 10.0.2.2 (maps to host machine)
-                // Apply emulator to both default and configured-bucket instances (if any)
-                try {
-                    FirebaseStorage.getInstance().useEmulator("10.0.2.2", 9199)
-                } catch (_: Exception) {}
-                val bucket = try { FirebaseApp.getInstance().options.storageBucket } catch (_: Exception) { null }
-                if (!bucket.isNullOrBlank()) {
-                    val bucketUrl = if (bucket.startsWith("gs://")) bucket else "gs://$bucket"
-                    try { FirebaseStorage.getInstance(bucketUrl).useEmulator("10.0.2.2", 9199) } catch (_: Exception) {}
-                }
-
-                Log.d("STORAGE_DEBUG", "Firebase Storage emulator enabled on 10.0.2.2:9199")
-            } catch (ex: Exception) {
-                Log.e("STORAGE_DEBUG", "Failed to enable Storage emulator: ${ex.message}", ex)
-            }
-        }
+        // Emulator usage removed: all Storage operations will go against the configured HTTPS bucket
 
             view.findViewById<Button>(R.id.btn_select_image).setOnClickListener {
                 // Check runtime permission if needed, then launch picker

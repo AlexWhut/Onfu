@@ -53,8 +53,6 @@ class FeedFragment : Fragment() {
             selectedAvatarUri = it
             // show preview immediately
             binding.profileAvatar.load(it) {
-                placeholder(R.drawable.avatar_placeholder)
-                error(R.drawable.avatar_placeholder)
                 transformations(CircleCropTransformation())
             }
             // start upload
@@ -97,22 +95,25 @@ class FeedFragment : Fragment() {
         rv.layoutManager = GridLayoutManager(requireContext(), spanCount)
         rv.addItemDecoration(GridSpacingItemDecoration(spanCount, spacingPx, false))
 
-        // Sample data - replace with real repository / ViewModel
-        val sample = listOf(
-            Post(ownerId = "u1", title = "At the beach", description = "Nice day", imageUrl = "...", id = "p1"),
-            Post(ownerId = "u2", title = "Mountain", description = "Hike", imageUrl = "", id = "p2"),
-            Post(ownerId = "u3", title = "City", description = "Night lights", imageUrl = "", id = "p3")
-        )
-
-        rv.adapter = FeedAdapter(sample) { post ->
-            onPostClicked(post)
-        }
+        // Load posts from Firestore and render images only in the grid
+        firestore.collection("posts")
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener(requireActivity()) { snapshot, error ->
+                if (_binding == null) return@addSnapshotListener
+                if (error != null || snapshot == null) {
+                    binding.rvFeed.adapter = FeedAdapter(emptyList()) { _ -> }
+                    return@addSnapshotListener
+                }
+                val posts = snapshot.toObjects(Post::class.java)
+                binding.rvFeed.adapter = FeedAdapter(posts) { post -> onPostClicked(post) }
+            }
 
         // Live update counts and profile header logic
         if (currentUid != null) {
             // Posts count
             firestore.collection("posts").whereEqualTo("ownerId", currentUid)
-                .addSnapshotListener { snap, e ->
+                .addSnapshotListener(requireActivity()) { snap, e ->
+                    if (_binding == null) return@addSnapshotListener
                     if (e != null) {
                         // permission denied or other error
                         binding.tvPostsCount.text = "0"
@@ -123,7 +124,8 @@ class FeedFragment : Fragment() {
 
             // Followers count
             firestore.collection("users").document(currentUid).collection("followers")
-                .addSnapshotListener { snap, e ->
+                .addSnapshotListener(requireActivity()) { snap, e ->
+                    if (_binding == null) return@addSnapshotListener
                     if (e != null) {
                         binding.tvFollowersCount.text = "0"
                     } else {
@@ -133,7 +135,8 @@ class FeedFragment : Fragment() {
 
             // Following count
             firestore.collection("users").document(currentUid).collection("following")
-                .addSnapshotListener { snap, e ->
+                .addSnapshotListener(requireActivity()) { snap, e ->
+                    if (_binding == null) return@addSnapshotListener
                     if (e != null) {
                         binding.tvFollowingCount.text = "0"
                     } else {
@@ -156,14 +159,15 @@ class FeedFragment : Fragment() {
                     ensurePermissionAndPickAvatar()
                 }
 
-            // Listen to user document to display name and avatar updates in real time
+            // Listen to user document to display name, bio and avatar updates in real time
             firestore.collection("users").document(currentUid)
-                .addSnapshotListener { doc, e ->
+                .addSnapshotListener(requireActivity()) { doc, e ->
+                    if (_binding == null) return@addSnapshotListener
                     if (e != null || doc == null || !doc.exists()) {
                         val fallback = auth.currentUser?.displayName ?: auth.currentUser?.email ?: "username"
                         binding.profileDisplayName.text = fallback
                         binding.profileUsername.text = "@${fallback}"
-                        binding.profileAvatar.setImageResource(R.drawable.avatar_placeholder)
+                        binding.profileBio.text = "no bio"
                         return@addSnapshotListener
                     }
 
@@ -176,15 +180,17 @@ class FeedFragment : Fragment() {
                     binding.profileDisplayName.text = displayName ?: userid
                     binding.profileUsername.text = "@${userid}"
 
+                    // Bio (limit to 50 words)
+                    val bio = doc.getString("bio") ?: ""
+                    val words = bio.trim().split(Regex("\\s+"))
+                    val bioLimited = if (words.size <= 50) bio.trim() else words.take(50).joinToString(" ")
+                    binding.profileBio.text = if (bioLimited.isBlank()) "no bio" else bioLimited
+
                     val photoUrl = doc.getString("photoUrl") ?: auth.currentUser?.photoUrl?.toString()
                     if (!photoUrl.isNullOrBlank()) {
                         binding.profileAvatar.load(photoUrl) {
-                            placeholder(R.drawable.avatar_placeholder)
-                            error(R.drawable.avatar_placeholder)
                             transformations(CircleCropTransformation())
                         }
-                    } else {
-                        binding.profileAvatar.setImageResource(R.drawable.avatar_placeholder)
                     }
                 }
 
@@ -233,16 +239,52 @@ class FeedFragment : Fragment() {
             binding.profileUsername.text = "@username"
         }
 
+        // Allow editing bio (max 50 words) by tapping the bio text
+        binding.profileBio.setOnClickListener {
+            val auth = FirebaseAuth.getInstance()
+            val uid = auth.currentUser?.uid
+            if (uid == null) {
+                Toast.makeText(requireContext(), "No hay usuario autenticado", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val edit = EditText(requireContext())
+            edit.setText(binding.profileBio.text)
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Editar descripción del perfil (máx. 50 palabras)")
+                .setView(edit)
+                .setPositiveButton("Guardar") { _, _ ->
+                    val raw = edit.text.toString().trim()
+                    val words = if (raw.isEmpty()) emptyList() else raw.split(Regex("\\s+"))
+                    val newBio = if (words.size <= 50) raw else words.take(50).joinToString(" ")
+                    FirebaseFirestore.getInstance().collection("users").document(uid)
+                        .set(mapOf("bio" to newBio), com.google.firebase.firestore.SetOptions.merge())
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "Descripción actualizada", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(requireContext(), "Error actualizando descripción: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
         // --- End of Changes ---
     }
 
     private fun onPostClicked(post: Post) {
-        // TODO: abrir detalle del post (Fragment o Activity) mostrando imagen, likes y descripción.
-        // Ejemplo con Navigation Component:
-        // val action = FeedFragmentDirections.actionFeedToPostDetail(post.id)
-        // findNavController().navigate(action)
-
-        Toast.makeText(requireContext(), "Open post ${post.title}", Toast.LENGTH_SHORT).show()
+        // Abre un fragmento de detalle con imagen completa y descripción
+        val detail = com.onfu.app.ui.post.PostDetailFragment.newInstance(
+            post.imageUrl,
+            post.description
+        )
+        parentFragmentManager
+            .beginTransaction()
+            .replace(R.id.home_child_container, detail)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun ensurePermissionAndPickAvatar() {
@@ -286,8 +328,6 @@ class FeedFragment : Fragment() {
 
                             // update UI immediately
                             binding.profileAvatar.load(downloadUrl) {
-                                placeholder(R.drawable.avatar_placeholder)
-                                error(R.drawable.avatar_placeholder)
                                 transformations(CircleCropTransformation())
                             }
 
@@ -357,14 +397,20 @@ class FeedFragment : Fragment() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val post = items[position]
-            holder.caption.text = "@${post.ownerId}  •  ${post.title}"
-
-            // Placeholder: carga de imagen aquí.
-            // Si usas Glide: Glide.with(holder.image).load(post.imageUrl).into(holder.image)
+            // Grid is images-only; hide caption
+            holder.caption.visibility = View.GONE
+            holder.caption.text = ""
+            holder.image.load(post.imageUrl)
 
             holder.itemView.setOnClickListener { onClick(post) }
+
+            // No caption edit in grid
         }
 
         override fun getItemCount(): Int = items.size
     }
+
+    // Removed helper limitToMaxWords; logic is inlined where needed
+
+    // Caption edit disabled for grid feed (bio editable in header)
 }

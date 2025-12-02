@@ -13,12 +13,18 @@ class PostRepository(
     private val postsCollection = firestore.collection("posts")
 
     suspend fun uploadPost(post: Post, imageBytes: ByteArray) {
-        val imageRef = storage.reference.child("posts/${UUID.randomUUID()}.jpg")
-        val uploadTask = imageRef.putBytes(imageBytes).await()
+        // Upload image bytes to Firebase Storage under posts/{ownerId}/...
+        val ownerId = post.ownerId
+        val filename = "${System.currentTimeMillis()}.jpg"
+        val imageRef = storage.reference.child("posts/$ownerId/$filename")
+        imageRef.putBytes(imageBytes).await()
         val downloadUrl = imageRef.downloadUrl.await().toString()
 
-        val postWithImage = post.copy(imageUrl = downloadUrl)
-        postsCollection.add(postWithImage).await()
+        // Save post to Firestore and persist generated document id
+        val postWithImage = post.copy(imageUrl = downloadUrl, timestamp = System.currentTimeMillis())
+        val docRef = postsCollection.add(postWithImage).await()
+        // Update the document's id field for easier client-side handling
+        postsCollection.document(docRef.id).update(mapOf("id" to docRef.id)).await()
     }
 
     suspend fun getAllPosts(): List<Post> {

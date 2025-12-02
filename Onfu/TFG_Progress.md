@@ -216,3 +216,66 @@ Horas dedicadas estimadas a Phase 3: ~20-30 horas
 - Crear drawable `avatar_placeholder` gris consistente y revisar su uso en todas las vistas.
 - Añadir prueba mínima `putBytes` para diagnóstico rápido en Storage.
 - Endurecer reglas de lectura (si se requiere autenticación) y documentar decisión.
+
+---
+
+## Fase 5 — Upload funcional, feed sin texto y bio de perfil (02‑Dic‑2025)
+
+**Objetivo:** Hacer funcional la pestaña de subida de posts (imágenes), mostrar un feed únicamente con imágenes en cuadrícula, y mover la descripción al detalle del post. Añadir bio editable bajo `@username` y eliminar el uso del emulador de Storage.
+
+**Cambios principales realizados:**
+- Upload de posts:
+    - Implementado `UploadFragment` (nuevo en `ui/upload`) para seleccionar imagen, previsualizar y subir a Storage con redimensionado a 1360 px de ancho y altura máxima 1080 (JPEG calidad 85).
+    - `PostRepository.uploadPost(...)` guarda la imagen en `posts/{ownerId}/{timestamp}.jpg`, obtiene la URL pública y persiste el documento en Firestore (incluye `id` del documento).
+    - Eliminado el uso del emulador de Storage y cualquier configuración de cleartext; se usa el bucket HTTPS real `gs://onfu-fe8fd.firebasestorage.app`.
+- Feed en cuadrícula (3 columnas):
+    - `FeedFragment` muestra sólo imágenes (sin texto/captions) en un `RecyclerView` con `GridLayoutManager(3)`.
+    - `item_post.xml` ajustado a relación de aspecto 1080:1360 (ancho:alto) para optimizar visualización en la cuadrícula.
+    - Al tocar un item, se abre `PostDetailFragment` que muestra la imagen completa y la descripción del post (texto sólo en el detalle).
+- Perfil y bio:
+    - Bajo `@username` se muestra `profile_bio` por defecto con el texto “no bio”.
+    - Bio editable al tocar, con límite de 50 palabras. Se persiste en `users/{uid}` y se refleja mediante listeners.
+- Dependencias y estabilidad:
+    - Añadidas dependencias faltantes: `androidx.recyclerview:recyclerview:1.3.2` y `androidx.constraintlayout:constraintlayout:2.1.4`.
+    - Corregidos listeners de Firestore usando la sobrecarga con `Activity` y guardas de ciclo de vida para evitar NPE tras destruir la vista.
+    - Ajustado `HomeFragment` para abrir el nuevo `UploadFragment` (posts) desde `nav_add`.
+
+**Reglas de Firebase Storage (actualizadas):**
+```
+rules_version = '2';
+service firebase.storage {
+    match /b/{bucket}/o {
+        match /avatars/{userId}/{allPaths=**} {
+            allow read: if true; // o if request.auth != null
+            allow write: if request.auth != null && request.auth.uid == userId;
+        }
+        match /posts/{userId}/{allPaths=**} {
+            allow read: if true; // o if request.auth != null
+            allow write: if request.auth != null && request.auth.uid == userId;
+        }
+        match /{allPaths=**} { allow read, write: if false; }
+    }
+}
+```
+
+**Problemas y cómo se resolvieron:**
+- 403 Permission denied al subir posts: Se corrigió la ruta de subida a `posts/{uid}/...` para alinearse con las reglas; tras ello, las subidas funcionaron.
+- Importaciones en rojo de RecyclerView/ConstraintLayout: Se añadieron las dependencias correspondientes en Gradle.
+- `addSnapshotListener` firma incorrecta y NPE post-destrucción de vista: Se usó la sobrecarga con `Activity` y se añadieron guardas de ciclo de vida (`_binding == null`).
+- Advertencia “No adapter attached; skipping layout”: Se inicializa el adapter tras recibir datos de Firestore.
+- Placeholder de Coil: Se eliminaron placeholders para que se cargue directamente la foto real (manteniendo `CircleCrop` sólo para avatar).
+
+**Validaciones realizadas:**
+- Subida de posts confirma URL obtenida y documento creado en Firestore con `id` persistido.
+- Feed muestra 3 columnas de imágenes con relación 1080:1360; al tocar abre detalle con descripción.
+- Bio muestra “no bio” por defecto y se actualiza correctamente al editar.
+
+**Justificación de horas (día):** ~6-8 horas
+- Implementación Upload + redimensionado + repositorio: 3-4 horas
+- Feed imágenes-only + detalle de post: 2 horas
+- Bio editable + reglas + estabilización listeners: 1-2 horas
+
+**Siguientes pasos recomendados:**
+- Añadir contador de palabras en el diálogo de edición de bio y desactivar “Guardar” si supera 50.
+- Optimizar carga de cuadrícula con `Coil.size(1080, 1360)` para ahorrar memoria.
+- Definir si el feed será global o filtrado por usuarios seguidos.

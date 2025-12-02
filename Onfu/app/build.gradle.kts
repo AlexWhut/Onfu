@@ -100,4 +100,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
 
+    // RecyclerView for the feed grid
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 }
