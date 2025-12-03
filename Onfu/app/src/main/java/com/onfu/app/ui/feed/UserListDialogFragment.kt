@@ -15,6 +15,7 @@ import coil.load
 import coil.transform.CircleCropTransformation
 import android.util.Log
 import android.widget.Toast
+import java.util.Locale
 
 class UserListDialogFragment : DialogFragment() {
 
@@ -75,7 +76,10 @@ class UserListDialogFragment : DialogFragment() {
                     .addOnSuccessListener { doc ->
                         val username = doc.getString("visibleName") ?: doc.getString("username") ?: doc.getString("displayName") ?: doc.getString("email") ?: id
                         val photo = doc.getString("photoUrl") ?: doc.getString("avatarUrl") ?: ""
-                        users.add(UserItem(id, username, photo))
+                        val typeFlag = doc.getString("userType")?.lowercase(Locale.US) ?: ""
+                        val explicitVerified = doc.getBoolean("isVerified") ?: doc.getBoolean("verified") ?: false
+                        val isVerified = explicitVerified || typeFlag == "verified"
+                        users.add(UserItem(id, username, photo, isVerified))
                         remaining.remove(id)
                         if (remaining.isEmpty()) {
                             // sort by username
@@ -99,13 +103,14 @@ class UserListDialogFragment : DialogFragment() {
         }
     }
 
-    data class UserItem(val uid: String, val displayName: String, val photoUrl: String)
+    data class UserItem(val uid: String, val displayName: String, val photoUrl: String, val isVerified: Boolean = false)
 
     private inner class SimpleUserAdapter(private val items: List<UserItem>) : RecyclerView.Adapter<SimpleUserAdapter.VH>() {
 
         inner class VH(v: View) : RecyclerView.ViewHolder(v) {
             val iv: ImageView = v.findViewById(R.id.iv_user_avatar)
             val tv: TextView = v.findViewById(R.id.tv_user_name)
+            val badge: ImageView = v.findViewById(R.id.iv_user_verified)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -125,6 +130,8 @@ class UserListDialogFragment : DialogFragment() {
             } else {
                 holder.iv.setImageResource(android.R.drawable.sym_def_app_icon)
             }
+
+            holder.badge.visibility = if (it.isVerified) View.VISIBLE else View.GONE
 
             holder.itemView.setOnClickListener {
                 // TODO: navigate to profile

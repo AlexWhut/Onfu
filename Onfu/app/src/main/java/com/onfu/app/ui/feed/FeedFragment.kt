@@ -168,6 +168,7 @@ class FeedFragment : Fragment() {
                         binding.profileDisplayName.text = fallback
                         binding.profileUsername.text = "@${fallback}"
                         binding.profileBio.text = "no bio"
+                        binding.profileVerifiedBadge.visibility = View.GONE
                         return@addSnapshotListener
                     }
 
@@ -179,6 +180,10 @@ class FeedFragment : Fragment() {
 
                     binding.profileDisplayName.text = displayName ?: userid
                     binding.profileUsername.text = "@${userid}"
+                    val typeFlag = doc.getString("userType")?.lowercase(Locale.US) ?: ""
+                    val explicitVerified = doc.getBoolean("isVerified") ?: doc.getBoolean("verified") ?: false
+                    val isVerified = explicitVerified || typeFlag == "verified"
+                    binding.profileVerifiedBadge.visibility = if (isVerified) View.VISIBLE else View.GONE
 
                     // Bio (limit to 50 words)
                     val bio = doc.getString("bio") ?: ""
