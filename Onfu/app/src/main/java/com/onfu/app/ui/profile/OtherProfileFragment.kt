@@ -20,6 +20,8 @@ import com.onfu.app.databinding.FragmentOtherProfileBinding
 import com.onfu.app.domain.models.Post
 import com.onfu.app.ui.feed.GridSpacingItemDecoration
 import com.onfu.app.ui.feed.PostsGridAdapter
+import com.onfu.app.ui.messages.ChatFragment
+import com.onfu.app.data.messages.MessagesRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
@@ -43,6 +45,7 @@ class OtherProfileFragment : Fragment() {
     private var followersListener: ListenerRegistration? = null
     private var followingListener: ListenerRegistration? = null
     private var userListener: ListenerRegistration? = null
+    private val messagesRepo by lazy { MessagesRepository() }
     private val postsAdapter by lazy {
         PostsGridAdapter { post -> onPostClicked(post) }
     }
@@ -67,8 +70,12 @@ class OtherProfileFragment : Fragment() {
         binding.rvUserPosts.adapter = postsAdapter
 
         binding.btnProfileBack.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.btnProfileFollow.visibility = View.VISIBLE
+        val isSelf = auth.currentUser?.uid == targetUid
+        binding.llProfileActions.visibility = if (isSelf) View.GONE else View.VISIBLE
+        binding.btnProfileFollow.visibility = if (isSelf) View.GONE else View.VISIBLE
+        binding.btnProfileMessage.visibility = if (isSelf) View.GONE else View.VISIBLE
         binding.btnProfileFollow.setOnClickListener { toggleFollow(!followingIds.contains(targetUid)) }
+        binding.btnProfileMessage.setOnClickListener { openMessaging() }
 
         observeUserDocument()
         observeCounts()
@@ -195,6 +202,30 @@ class OtherProfileFragment : Fragment() {
         }
         val currentUid = auth.currentUser?.uid
         binding.btnProfileFollow.isEnabled = !followLoading && !currentUid.isNullOrBlank()
+    }
+
+    private fun openMessaging() {
+        val otherUid = targetUid
+        val currentUid = auth.currentUser?.uid
+        if (currentUid.isNullOrBlank()) {
+            Toast.makeText(requireContext(), "Inicia sesión para enviar mensajes", Toast.LENGTH_SHORT).show()
+            return
+        }
+        messagesRepo.startConversation(otherUid) { conversationId ->
+            if (conversationId == null) {
+                Toast.makeText(requireContext(), "No se pudo iniciar la conversación", Toast.LENGTH_LONG).show()
+                return@startConversation
+            }
+            selectMessagesTab()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.home_child_container, ChatFragment.newInstance(conversationId))
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
+    private fun selectMessagesTab() {
+        requireActivity().findViewById<View>(R.id.nav_messages)?.performClick()
     }
 
     private fun onPostClicked(post: Post) {

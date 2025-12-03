@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.onfu.app.R
 import com.onfu.app.ui.search.SearchFragment
+import com.onfu.app.ui.messages.ChatListFragment
 
 /**
  * HomeFragment: host para el Feed y navegación inferior simple.
@@ -43,7 +44,7 @@ class HomeFragment : Fragment() {
 
         view.findViewById<View>(R.id.nav_messages).setOnClickListener {
             childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, PlaceholderFragment.newInstance("Messages"))
+                .replace(R.id.home_child_container, ChatListFragment())
                 .commit()
         }
 
