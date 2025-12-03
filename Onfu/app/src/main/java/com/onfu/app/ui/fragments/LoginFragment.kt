@@ -121,10 +121,11 @@ class LoginFragment : Fragment() {
                 }
             }
         } else {
-            // Login por username: usar lookup por documento en usernames/{userid}
+            // Login por username (sin exponer email en 'usernames'):
+            // 1) usernames/{userid} -> uid
+            // 2) users/{uid}.email -> email
             val docRef = firestore.collection("usernames").document(input)
 
-            // Debug logs to trace username lookup (no PII)
             Log.d("LoginFragment", "Looking up username='$input' at usernames/${input}")
 
             docRef.get()
@@ -136,23 +137,65 @@ class LoginFragment : Fragment() {
                         return@addOnSuccessListener
                     }
 
-                    val resolvedEmail = doc.getString("email")
-                    if (resolvedEmail.isNullOrEmpty()) {
-                        Toast.makeText(requireContext(), "Este usuario no tiene email registrado.", Toast.LENGTH_LONG).show()
+                    // Fallback de migración: si el doc de usernames aún tiene email, úsalo directamente
+                    val legacyEmail = doc.getString("email")
+                    if (!legacyEmail.isNullOrEmpty()) {
+                        Log.d("LoginFragment", "Using legacy email from usernames for '$input'")
+                        auth.signInWithEmailAndPassword(legacyEmail, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    val loggedUid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                                    checkProfileExistsAndNavigate(loggedUid)
+                                } else {
+                                    Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
                         return@addOnSuccessListener
                     }
 
-                    // Don't log actual email or uid to avoid leaking PII in logs
-                    Log.d("LoginFragment", "Resolved email present for '$input'")
+                    val uid = doc.getString("uid")
+                    if (uid.isNullOrEmpty()) {
+                        Toast.makeText(requireContext(), "Usuario inválido (sin UID).", Toast.LENGTH_LONG).show()
+                        return@addOnSuccessListener
+                    }
 
-                    // Ahora hacemos login con el email resuelto
-                    auth.signInWithEmailAndPassword(resolvedEmail, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
-                                checkProfileExistsAndNavigate(uid)
+                    firestore.collection("users").document(uid).get()
+                        .addOnSuccessListener { userDoc ->
+                            val resolvedEmail = userDoc.getString("email")
+                            if (resolvedEmail.isNullOrEmpty()) {
+                                Toast.makeText(requireContext(), "Este usuario no tiene email registrado.", Toast.LENGTH_LONG).show()
+                                return@addOnSuccessListener
+                            }
+
+                            // No loggear email/uid para no exponer PII
+                            Log.d("LoginFragment", "Resolved email present for username '$input'")
+
+                            auth.signInWithEmailAndPassword(resolvedEmail, password)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        val loggedUid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                                        checkProfileExistsAndNavigate(loggedUid)
+                                    } else {
+                                        Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            // Si no se puede leer users (posibles reglas privadas), intenta fallback si usernames tenía email
+                            val fallbackEmail = doc.getString("email")
+                            if (!fallbackEmail.isNullOrEmpty()) {
+                                Log.w("LoginFragment", "Users read failed; falling back to legacy email in usernames", e)
+                                auth.signInWithEmailAndPassword(fallbackEmail, password)
+                                    .addOnCompleteListener { task ->
+                                        if (task.isSuccessful) {
+                                            val loggedUid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                                            checkProfileExistsAndNavigate(loggedUid)
+                                        } else {
+                                            Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
                             } else {
-                                Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(requireContext(), "Error obteniendo perfil: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                 }

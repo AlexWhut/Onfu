@@ -68,14 +68,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation("androidx.navigation:navigation-compose:2.7.5")
-    implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
     implementation("io.coil-kt:coil-compose:2.4.0")
     // Coil ImageView extension (used by UserListDialogFragment)
     implementation("io.coil-kt:coil:2.4.0")
 
     // RecyclerView for legacy XML-based lists
-    implementation("androidx.recyclerview:recyclerview:1.3.1")
-
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     // BoM de Firebase (solo una vez)
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
@@ -100,7 +98,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
 
-    // RecyclerView for the feed grid
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    // (Removed duplicates) RecyclerView and ConstraintLayout declared above
 }

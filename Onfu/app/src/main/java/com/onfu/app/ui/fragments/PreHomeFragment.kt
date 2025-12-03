@@ -49,7 +49,7 @@ class PreHomeFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            val userid = binding.etUserId.text.toString().trim()
+                val userid = binding.etUserId.text.toString().trim().lowercase()
             if (userid.isEmpty()) {
                 binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
                 binding.tvAvailability.text = "Username is required"
@@ -62,7 +62,7 @@ class PreHomeFragment : Fragment() {
             }
 
             // Check availability one more time before saving using `usernames` collection (single-doc lookup)
-            val usernameDocRef = firestore.collection("usernames").document(userid)
+                val usernameDocRef = firestore.collection("usernames").document(userid)
             usernameDocRef.get()
                 .addOnSuccessListener { docSnap ->
                     if (docSnap.exists()) {
@@ -91,7 +91,8 @@ class PreHomeFragment : Fragment() {
                     val usersRef = firestore.collection("users").document(uid)
                     val usernamesRef = firestore.collection("usernames").document(userid)
                     batch.set(usersRef, data)
-                    batch.set(usernamesRef, mapOf("uid" to uid, "email" to email))
+                        // usernames sólo mapea userid -> uid (sin email/PII)
+                        batch.set(usernamesRef, mapOf("uid" to uid))
                     batch.commit()
                         .addOnSuccessListener {
                             // Navigate to HomeFragment (host with bottom nav)
@@ -110,12 +111,13 @@ class PreHomeFragment : Fragment() {
     }
 
     private fun checkAvailability(candidate: String) {
-        if (candidate.isEmpty()) {
+            val normalized = candidate.trim().lowercase()
+            if (normalized.isEmpty()) {
             binding.tvAvailability.text = ""
             return
         }
         // Check existence by reading usernames/{candidate}
-        firestore.collection("usernames").document(candidate).get()
+            firestore.collection("usernames").document(normalized).get()
             .addOnSuccessListener { doc ->
                 val uid = auth.currentUser?.uid
                 if (doc.exists()) {
