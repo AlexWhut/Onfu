@@ -61,14 +61,17 @@ class PreHomeFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // Check availability one more time before saving
-            firestore.collection("users").whereEqualTo("userid", userid).get()
-                .addOnSuccessListener { snaps ->
-                    val conflict = snaps.documents.any { it.getString("uid") != uid }
-                    if (conflict) {
-                        binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
-                        binding.tvAvailability.text = "No disponible"
-                        return@addOnSuccessListener
+            // Check availability one more time before saving using `usernames` collection (single-doc lookup)
+            val usernameDocRef = firestore.collection("usernames").document(userid)
+            usernameDocRef.get()
+                .addOnSuccessListener { docSnap ->
+                    if (docSnap.exists()) {
+                        val existingUid = docSnap.getString("uid")
+                        if (existingUid != null && existingUid != uid) {
+                            binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                            binding.tvAvailability.text = "No disponible"
+                            return@addOnSuccessListener
+                        }
                     }
 
                     var visibleName = binding.etVisibleName.text.toString().trim()
@@ -83,7 +86,13 @@ class PreHomeFragment : Fragment() {
                         "email" to email
                     )
 
-                    firestore.collection("users").document(uid).set(data)
+                    // Write both documents: users/{uid} and usernames/{userid}
+                    val batch = firestore.batch()
+                    val usersRef = firestore.collection("users").document(uid)
+                    val usernamesRef = firestore.collection("usernames").document(userid)
+                    batch.set(usersRef, data)
+                    batch.set(usernamesRef, mapOf("uid" to uid, "email" to email))
+                    batch.commit()
                         .addOnSuccessListener {
                             // Navigate to HomeFragment (host with bottom nav)
                             parentFragmentManager.beginTransaction()
@@ -105,18 +114,21 @@ class PreHomeFragment : Fragment() {
             binding.tvAvailability.text = ""
             return
         }
-
-        firestore.collection("users").whereEqualTo("userid", candidate).get()
-            .addOnSuccessListener { snaps ->
+        // Check existence by reading usernames/{candidate}
+        firestore.collection("usernames").document(candidate).get()
+            .addOnSuccessListener { doc ->
                 val uid = auth.currentUser?.uid
-                val existsOther = snaps.documents.any { it.getString("uid") != uid }
-                if (existsOther) {
-                    binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
-                    binding.tvAvailability.text = "No disponible"
-                } else {
-                    binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
-                    binding.tvAvailability.text = "Disponible"
+                if (doc.exists()) {
+                    val existingUid = doc.getString("uid")
+                    val existsOther = existingUid != null && existingUid != uid
+                    if (existsOther) {
+                        binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                        binding.tvAvailability.text = "No disponible"
+                        return@addOnSuccessListener
+                    }
                 }
+                binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
+                binding.tvAvailability.text = "Disponible"
             }
             .addOnFailureListener { e ->
                 binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))

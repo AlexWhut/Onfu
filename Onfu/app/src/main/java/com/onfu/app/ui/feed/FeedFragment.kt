@@ -26,12 +26,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.fragment.app.Fragment
+// No changes made to import statements
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.onfu.app.ui.feed.GridSpacingItemDecoration
 import com.onfu.app.R
 import com.onfu.app.databinding.FragmentFeedBinding
 import com.onfu.app.domain.models.Post
+import com.onfu.app.ui.fragments.LoginFragment
+import com.onfu.app.ui.feed.GridSpacingItemDecoration
 
 /**
  * Fragment que muestra el feed: stories arriba, RecyclerView de posts y NAV abajo.
@@ -77,6 +79,10 @@ class FeedFragment : Fragment() {
         return binding.root
     }
 
+    private val postsAdapter by lazy {
+        PostsGridAdapter { post -> onPostClicked(post) }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -95,17 +101,28 @@ class FeedFragment : Fragment() {
         rv.layoutManager = GridLayoutManager(requireContext(), spanCount)
         rv.addItemDecoration(GridSpacingItemDecoration(spanCount, spacingPx, false))
 
+        binding.btnLogout.setOnClickListener {
+            auth.signOut()
+            val fm = requireActivity().supportFragmentManager
+            fm.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            fm.beginTransaction()
+                .replace(R.id.fragment_container, LoginFragment())
+                .commit()
+        }
+
         // Load posts from Firestore and render images only in the grid
+        binding.rvFeed.adapter = postsAdapter
         firestore.collection("posts")
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .addSnapshotListener(requireActivity()) { snapshot, error ->
                 if (_binding == null) return@addSnapshotListener
                 if (error != null || snapshot == null) {
-                    binding.rvFeed.adapter = FeedAdapter(emptyList()) { _ -> }
+                    postsAdapter.submitList(emptyList())
                     return@addSnapshotListener
                 }
                 val posts = snapshot.toObjects(Post::class.java)
-                binding.rvFeed.adapter = FeedAdapter(posts) { post -> onPostClicked(post) }
+                val filtered = currentUid?.let { owner -> posts.filter { it.ownerId == owner } } ?: emptyList()
+                postsAdapter.submitList(filtered)
             }
 
         // Live update counts and profile header logic
@@ -383,36 +400,6 @@ class FeedFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    private class FeedAdapter(
-        private val items: List<Post>,
-        private val onClick: (Post) -> Unit
-    ) : RecyclerView.Adapter<FeedAdapter.VH>() {
-
-        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val image: ImageView = itemView.findViewById(R.id.iv_post_image)
-            val caption: TextView = itemView.findViewById(R.id.post_caption)
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_post, parent, false)
-            return VH(v)
-        }
-
-        override fun onBindViewHolder(holder: VH, position: Int) {
-            val post = items[position]
-            // Grid is images-only; hide caption
-            holder.caption.visibility = View.GONE
-            holder.caption.text = ""
-            holder.image.load(post.imageUrl)
-
-            holder.itemView.setOnClickListener { onClick(post) }
-
-            // No caption edit in grid
-        }
-
-        override fun getItemCount(): Int = items.size
     }
 
     // Removed helper limitToMaxWords; logic is inlined where needed

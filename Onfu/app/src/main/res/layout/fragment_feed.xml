@@ -20,6 +20,16 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent">
 
+		<Button
+			android:id="@+id/btn_logout"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="end"
+			android:text="@string/logout"
+			android:textSize="12sp"
+			android:paddingStart="12dp"
+			android:paddingEnd="12dp" />
+
 		<ImageView
 			android:id="@+id/profile_avatar"
 			android:layout_width="100dp"

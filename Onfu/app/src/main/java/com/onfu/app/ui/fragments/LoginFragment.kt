@@ -18,6 +18,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.onfu.app.R
+// removed debug dialog imports to avoid in-app PII helpers
 import com.onfu.app.databinding.FragmentLoginBinding
 import com.onfu.app.ui.fragments.HomeFragment
 
@@ -88,7 +89,7 @@ class LoginFragment : Fragment() {
                     try {
                         val task = GoogleSignIn.getSignedInAccountFromIntent(data)
                         val account = task.getResult(ApiException::class.java)
-                        Log.d("LoginFragment", "Cancelled but account present: ${account?.email}")
+                        Log.d("LoginFragment", "Cancelled but account present")
                     } catch (apiEx: ApiException) {
                         Log.w("LoginFragment", "GoogleSignIn cancelled, ApiException: ${apiEx.statusCode}", apiEx)
                         Toast.makeText(requireContext(), "Google sign-in canceled (code ${apiEx.statusCode})", Toast.LENGTH_SHORT).show()
@@ -100,55 +101,67 @@ class LoginFragment : Fragment() {
         }
 
         binding.btnLogin.setOnClickListener {
-            val email = binding.etUsername.text.toString().trim()
-            val password = binding.etPassword.text.toString()
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(requireContext(), "Please enter username and password", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+    val input = binding.etUsername.text.toString().trim().lowercase()
+    val password = binding.etPassword.text.toString()
 
-            // If input looks like an email (contains @) use email/password sign-in.
-            if (email.contains("@")) {
-                auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
-                            checkProfileExistsAndNavigate(uid)
-                        } else {
-                            Toast.makeText(requireContext(), "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                        }
-                    }
-            } else {
-                // Treat input as username: resolve to email via Firestore users collection
-                val candidate = email
-                firestore.collection("users").whereEqualTo("userid", candidate).get()
-                    .addOnSuccessListener { snaps ->
-                        if (snaps.isEmpty) {
-                            Toast.makeText(requireContext(), "Usuario no encontrado. Usa tu correo para iniciar sesión.", Toast.LENGTH_LONG).show()
-                            return@addOnSuccessListener
-                        }
-                        val doc = snaps.documents[0]
-                        val resolvedEmail = doc.getString("email")
-                        if (resolvedEmail.isNullOrEmpty()) {
-                            Toast.makeText(requireContext(), "Este usuario no tiene email registrado. Usa el correo para iniciar sesión.", Toast.LENGTH_LONG).show()
-                            return@addOnSuccessListener
-                        }
-                        // sign in with resolved email
-                        auth.signInWithEmailAndPassword(resolvedEmail, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
-                                    checkProfileExistsAndNavigate(uid)
-                                } else {
-                                    Toast.makeText(requireContext(), "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                    }
-                    .addOnFailureListener { err ->
-                        Toast.makeText(requireContext(), "Error buscando usuario: ${err.message}", Toast.LENGTH_LONG).show()
-                    }
+    if (input.isEmpty() || password.isEmpty()) {
+        Toast.makeText(requireContext(), "Ingresa usuario y contraseña", Toast.LENGTH_SHORT).show()
+        return@setOnClickListener
+    }
+
+    if (input.contains("@")) {
+        // Login por email
+        auth.signInWithEmailAndPassword(input, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                    checkProfileExistsAndNavigate(uid)
+                } else {
+                    Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                }
             }
+        } else {
+            // Login por username: usar lookup por documento en usernames/{userid}
+            val docRef = firestore.collection("usernames").document(input)
+
+            // Debug logs to trace username lookup (no PII)
+            Log.d("LoginFragment", "Looking up username='$input' at usernames/${input}")
+
+            docRef.get()
+                .addOnSuccessListener { doc ->
+                    Log.d("LoginFragment", "Lookup result exists=${doc.exists()}, id=${doc.id}")
+
+                    if (!doc.exists()) {
+                        Toast.makeText(requireContext(), "Usuario no encontrado.", Toast.LENGTH_LONG).show()
+                        return@addOnSuccessListener
+                    }
+
+                    val resolvedEmail = doc.getString("email")
+                    if (resolvedEmail.isNullOrEmpty()) {
+                        Toast.makeText(requireContext(), "Este usuario no tiene email registrado.", Toast.LENGTH_LONG).show()
+                        return@addOnSuccessListener
+                    }
+
+                    // Don't log actual email or uid to avoid leaking PII in logs
+                    Log.d("LoginFragment", "Resolved email present for '$input'")
+
+                    // Ahora hacemos login con el email resuelto
+                    auth.signInWithEmailAndPassword(resolvedEmail, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                                checkProfileExistsAndNavigate(uid)
+                            } else {
+                                Toast.makeText(requireContext(), "Login fallido: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(requireContext(), "Error buscando usuario: ${e.message}", Toast.LENGTH_LONG).show()
+                }
         }
+}
+
 
         binding.btnGoogle.setOnClickListener {
             val client = googleSignInClient
@@ -167,7 +180,10 @@ class LoginFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+
+        // long-press helper removed — no runtime dialog to create usernames (avoid PII in code)
     }
+
 
     private fun checkProfileExistsAndNavigate(uid: String) {
         firestore.collection("users").document(uid).get()

@@ -3,4 +3,7 @@
     <!-- Client ID web OAuth2 (copiado de app/google-services.json) -->
     <string name="default_web_client_id">1020627430004-g88e9pufpp9lt3k1l9dqcrggf19kesic.apps.googleusercontent.com</string>
     <string name="verified_badge">Usuario verificado</string>
+    <string name="back">Atrás</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="loading">Cargando...</string>
 </resources>

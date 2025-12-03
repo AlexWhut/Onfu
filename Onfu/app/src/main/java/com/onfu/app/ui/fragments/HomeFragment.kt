@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.onfu.app.R
+import com.onfu.app.ui.search.SearchFragment
 
 /**
  * HomeFragment: host para el Feed y navegación inferior simple.
@@ -36,7 +37,7 @@ class HomeFragment : Fragment() {
 
         view.findViewById<View>(R.id.nav_search).setOnClickListener {
             childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, PlaceholderFragment.newInstance("Search"))
+                .replace(R.id.home_child_container, SearchFragment())
                 .commit()
         }
 

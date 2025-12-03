@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_search_user_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:foreground="?attr/selectableItemBackground"
+    android:background="?android:attr/selectableItemBackgroundBorderless">
+
+    <ImageView
+        android:id="@+id/iv_search_avatar"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:src="@android:drawable/sym_def_app_icon"
+        android:scaleType="centerCrop"
+        android:contentDescription="Avatar"
+        android:background="@drawable/oval_clip"
+        android:clipToOutline="true" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_search_display_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Display Name"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#000" />
+
+            <ImageView
+                android:id="@+id/iv_search_verified"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/ic_verified_badge"
+                android:visibility="gone"
+                android:contentDescription="Verificado" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_search_username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@username"
+            android:textColor="#666"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_search_follow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Seguir"
+        android:minWidth="80dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp" />
+
+</LinearLayout>

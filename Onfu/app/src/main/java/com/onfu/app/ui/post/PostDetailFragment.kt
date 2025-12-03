@@ -29,8 +29,8 @@ class PostDetailFragment : Fragment() {
         val desc = view.findViewById<TextView>(R.id.tv_detail_description)
 
         image.load(imageUrl) {
-            placeholder(R.drawable.avatar_placeholder)
-            error(R.drawable.avatar_placeholder)
+            placeholder(android.R.drawable.sym_def_app_icon)
+            error(android.R.drawable.sym_def_app_icon)
         }
         desc.text = description
     }

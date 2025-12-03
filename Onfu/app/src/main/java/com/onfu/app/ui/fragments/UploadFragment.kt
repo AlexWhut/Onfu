@@ -37,8 +37,8 @@ class UploadFragment : Fragment() {
         uri?.let {
             selectedImageUri = it
             view?.findViewById<ImageView>(R.id.iv_upload_preview)?.load(it) {
-                placeholder(R.drawable.avatar_placeholder)
-                error(R.drawable.avatar_placeholder)
+                placeholder(android.R.drawable.sym_def_app_icon)
+                error(android.R.drawable.sym_def_app_icon)
             }
         }
     }
@@ -127,8 +127,8 @@ class UploadFragment : Fragment() {
 
                             // Update preview immediately
                             view?.findViewById<ImageView>(R.id.iv_upload_preview)?.load(downloadUrl) {
-                                placeholder(R.drawable.avatar_placeholder)
-                                error(R.drawable.avatar_placeholder)
+                                placeholder(android.R.drawable.sym_def_app_icon)
+                                error(android.R.drawable.sym_def_app_icon)
                                 transformations(coil.transform.CircleCropTransformation())
                             }
 
