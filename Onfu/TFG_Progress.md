@@ -269,4 +269,58 @@ service firebase.storage {
 - Feed imágenes-only + detalle de post: 2 horas
 - Bio editable + reglas + estabilización listeners: 1-2 horas
 
+---
+
+## Fase 6 — Implementacin de funciones adicionales Y resolución de login por username y mejoras de seguridad (03‑Dic‑2025)
+
+**Implementación adicional — Pestaña "Search Users":**
+
+- Se implementó la pestaña de búsqueda de usuarios (`Search Users`) junto con las funciones de búsqueda y presentación de resultados.
+- La búsqueda usa la colección `usernames/{userid}` para resolver rápidamente ids públicos y evita realizar consultas sobre `users` que requieran listas o índices abiertos.
+- La UI muestra resultados con paginación básica, permite navegar al perfil público del usuario y no expone PII en logs ni en la lista de resultados.
+- Documentado en el repositorio y cubierto por las reglas de Firestore ya publicadas (lectura pública mínima sobre `usernames`).
+
+**Objetivo:** Corregir el flujo de login por `userid` (username) para que funcione mediante una lookup segura y pública de `usernames/{userid}`, evitar exponer datos personales en los logs y proporcionar herramientas seguras para migrar/mantener los mapeos userid→uid/email.
+
+**Cambios principales realizados:**
+- Revisión y actualización de Reglas de Firestore: Se publicó la regla para `usernames` que permite lectura pública mínima y asegura creación/borrado sólo por el propietario:
+
+```
+match /usernames/{userid} {
+    allow read: if true;
+    allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && request.resource.data.email is string;
+    allow update: if false;
+    allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+}
+```
+
+- Refactor en `LoginFragment.kt`:
+    - Se sustituyó la consulta por `whereEqualTo("userid", ...)` por un `document(input).get()` en `usernames/{input}` para hacer una única lectura por documento (más segura y eficiente) y evitar depender de un campo indexado dentro de `users`.
+    - Se añadieron logs mínimos y no identificativos: sólo se registra existencia del documento y presencia de email, sin imprimir `doc.data` ni emails/uids.
+    - Se eliminaron helpers que insertaban PII desde la UI (ya no existe diálogo en login para ingresar UIDs/emails).
+
+- Migración y backfill:
+    - Incluido el script `scripts/migrate_usernames.js` (Node.js, Firebase Admin SDK) para poblar `usernames/{userid}` desde `users` existentes. Soporta `--dryRun` y reporte de conflictos.
+
+- Seguridad y privacidad:
+    - Eliminados logs que imprimían emails o UIDs en `LoginFragment` y `LoginScreen`.
+    - Se comprobó el código en búsqueda de patrones de PII (emails, tokens, storage URLs con tokens) y no se encontraron valores incrustados.
+
+**Validaciones realizadas:**
+- Verificación en logcat de que el app está apuntando al proyecto `onfu de fire base`.
+- Pruebas manuales: registros nuevos funcionan y el login por `userid` resuelve correctamente cuando existe el documento `usernames/{userid}`.
+- Si el documento no existe (ej. usuarios antiguos), la app muestra "Usuario no encontrado." y el usuario puede registrarse normalmente (nuevo registro crea su mapping en `usernames`).
+
+**Notas y decisiones:**
+- Decidimos no incluir ningún dato personal en el código fuente (ni en logs) y ofrecer un script de migración para backfill fuera de la app.
+- Añadí una herramienta temporal durante la depuración, pero fue retirada por razones de privacidad; las pruebas se recomiendan hacerse a través de la Console de Firebase o el script de migración.
+
+**Justificación de horas (día):** ~4-6 horas
+- Diagnóstico de permisos y reglas de Firestore: 1-2 horas
+- Refactor en `LoginFragment` y limpieza de logs: 1-2 horas
+- Creación del script de migración y documentación: 1-2 horas
+
+
+
+
  
