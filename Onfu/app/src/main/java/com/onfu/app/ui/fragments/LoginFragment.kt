@@ -217,11 +217,8 @@ class LoginFragment : Fragment() {
         }
 
         binding.tvRegisterLink.setOnClickListener {
-            // Navigate to RegisterFragment
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, RegisterFragment())
-                .addToBackStack(null)
-                .commit()
+            // Navigate to RegisterFragment using safe replace
+            replaceTo(RegisterFragment(), addToBackStack = true)
         }
 
         // long-press helper removed — no runtime dialog to create usernames (avoid PII in code)
@@ -233,19 +230,29 @@ class LoginFragment : Fragment() {
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     // already has profile -> go to HomeFragment (host with bottom nav)
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, HomeFragment())
-                        .commit()
+                    replaceTo(HomeFragment())
                 } else {
                     // go to prehome to set userid/name
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, PreHomeFragment())
-                        .commit()
+                    replaceTo(PreHomeFragment())
                 }
             }
             .addOnFailureListener { err ->
                 Toast.makeText(requireContext(), "Error: ${err.message}", Toast.LENGTH_LONG).show()
             }
+    }
+
+    // Safe fragment replace: check whether the Activity's `fragment_container` view exists;
+    // if not, fall back to `android.R.id.content` so the app doesn't crash with
+    // "No view found for id ..." when layouts differ or the container is missing.
+    private fun replaceTo(fragment: Fragment, addToBackStack: Boolean = false) {
+        val act = activity ?: return
+        val containerView = act.findViewById<View?>(R.id.fragment_container)
+        val fm = act.supportFragmentManager
+        val tx = fm.beginTransaction()
+        val targetContainer = if (containerView != null) R.id.fragment_container else android.R.id.content
+        tx.replace(targetContainer, fragment)
+        if (addToBackStack) tx.addToBackStack(null)
+        tx.commit()
     }
 
     override fun onDestroyView() {
