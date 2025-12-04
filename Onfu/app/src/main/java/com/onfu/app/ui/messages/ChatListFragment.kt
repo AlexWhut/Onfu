@@ -11,6 +11,8 @@ import com.onfu.app.databinding.FragmentChatListBinding
 import com.onfu.app.data.messages.MessagesRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.android.material.snackbar.Snackbar
 
 class ChatListFragment : Fragment() {
     private var _binding: FragmentChatListBinding? = null
@@ -41,7 +43,16 @@ class ChatListFragment : Fragment() {
             .addSnapshotListener(requireActivity()) { snap, err ->
                 if (_binding == null) return@addSnapshotListener
                 if (err != null || snap == null) {
-                    adapter.submitList(emptyList())
+                    // No vaciamos la lista en caso de error; mostramos mensaje específico y conservamos datos visibles
+                    val ffErr = err as? FirebaseFirestoreException
+                    if (ffErr?.code == FirebaseFirestoreException.Code.FAILED_PRECONDITION) {
+                        // Índice faltante o en construcción
+                        Snackbar.make(binding.root, "Consulta requiere índice. Crea el índice en Firebase Console.", Snackbar.LENGTH_LONG).show()
+                    } else {
+                        android.widget.Toast.makeText(requireContext(), "Error cargando conversaciones.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    val shortMsg = ffErr?.code?.name ?: err?.javaClass?.simpleName ?: "UnknownError"
+                    android.util.Log.w("ChatListFragment", "conversations listener error: $shortMsg")
                 } else {
                     val items = snap.documents.map { d ->
                         ChatListItem(
@@ -68,3 +79,4 @@ data class ChatListItem(
     val lastText: String,
     val lastAt: Long
 )
+

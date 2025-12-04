@@ -35,6 +35,7 @@ import com.onfu.app.domain.models.Post
 import com.onfu.app.ui.fragments.LoginFragment
 import com.onfu.app.ui.feed.GridSpacingItemDecoration
 
+
 /**
  * Fragment que muestra el feed: stories arriba, RecyclerView de posts y NAV abajo.
  * Esta implementación inicial infla `fragment_feed.xml`, carga datos de ejemplo y
@@ -105,9 +106,19 @@ class FeedFragment : Fragment() {
             auth.signOut()
             val fm = requireActivity().supportFragmentManager
             fm.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-            fm.beginTransaction()
-                .replace(R.id.fragment_container, LoginFragment())
-                .commit()
+
+            // Defensive: ensure the activity actually contains the expected container before replacing.
+            val containerView = requireActivity().findViewById<View?>(R.id.fragment_container)
+            if (containerView != null) {
+                fm.beginTransaction()
+                    .replace(R.id.fragment_container, LoginFragment())
+                    .commitAllowingStateLoss()
+            } else {
+                // Fallback: replace the activity content root so we still return to a clean LoginFragment
+                fm.beginTransaction()
+                    .replace(android.R.id.content, LoginFragment())
+                    .commitAllowingStateLoss()
+            }
         }
 
         // Load posts from Firestore and render images only in the grid

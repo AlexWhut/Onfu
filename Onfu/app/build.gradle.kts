@@ -56,6 +56,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     // AppCompat (needed for AppCompatActivity, fragments, and traditional views)
     implementation("androidx.appcompat:appcompat:1.6.1")
+    // Material Components (Snackbar, Material theming)
+    implementation("com.google.android.material:material:1.9.0")
     // Fragment KTX for fragment transactions and utilities
     implementation("androidx.fragment:fragment-ktx:1.6.1")
     // ConstraintLayout for XML ConstraintLayout attributes
