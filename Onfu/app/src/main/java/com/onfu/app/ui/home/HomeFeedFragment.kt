@@ -61,35 +61,22 @@ class HomeFeedFragment : Fragment() {
                     return@addOnSuccessListener
                 }
 
-                // Avoid `whereIn` + `orderBy` which requires a composite index. Query per owner instead
-                val results = mutableListOf<Post>()
-                var remaining = owners.size
-
-                if (owners.isEmpty()) {
-                    adapter.submitList(emptyList())
-                    return@addOnSuccessListener
-                }
-
-                for (owner in owners) {
-                    firestore.collection("posts")
-                        .whereEqualTo("ownerId", owner)
-                        .orderBy("timestamp", Query.Direction.DESCENDING)
-                        .get()
-                        .addOnSuccessListener { qsnap ->
-                            val posts = qsnap.toObjects(Post::class.java)
-                            results.addAll(posts)
-                            remaining -= 1
-                            if (remaining == 0) {
-                                val sorted = results.sortedByDescending { it.timestamp }
-                                adapter.submitList(sorted)
-                                attachLikesListeners(sorted)
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            remaining -= 1
-                            if (remaining == 0) adapter.submitList(results.sortedByDescending { it.timestamp })
-                        }
-                }
+                // Simpler approach: query recent posts ordered by timestamp and filter
+                // client-side by the set of owners/followed ids. This avoids multiple
+                // per-owner queries and any index issues.
+                firestore.collection("posts")
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener { psnap ->
+                        val allPosts = psnap.toObjects(Post::class.java)
+                        val filtered = allPosts.filter { owners.contains(it.ownerId) }
+                        adapter.submitList(filtered)
+                        attachLikesListeners(filtered)
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(requireContext(), "Error loading posts: ${e.message}", Toast.LENGTH_LONG).show()
+                        adapter.submitList(emptyList())
+                    }
             }
             .addOnFailureListener { e ->
                 Toast.makeText(requireContext(), "Error loading following: ${e.message}", Toast.LENGTH_LONG).show()

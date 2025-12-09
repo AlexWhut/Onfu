@@ -3,6 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Back button (same as profile) -->
+    <ImageButton
+        android:id="@+id/btn_post_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_arrow_back"
+        android:tint="#FFFFFF"
+        android:contentDescription="@string/back"
+        android:layout_gravity="top|start" />
+
     <!-- Full-bleed image like Instagram -->
     <ImageView
         android:id="@+id/iv_detail_image"

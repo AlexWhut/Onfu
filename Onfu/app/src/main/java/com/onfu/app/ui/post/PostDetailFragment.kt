@@ -27,12 +27,17 @@ class PostDetailFragment : Fragment() {
 
         val image = view.findViewById<ImageView>(R.id.iv_detail_image)
         val desc = view.findViewById<TextView>(R.id.tv_detail_description)
+        val back = view.findViewById<ImageView>(R.id.btn_post_back)
 
         image.load(imageUrl) {
             placeholder(android.R.drawable.sym_def_app_icon)
             error(android.R.drawable.sym_def_app_icon)
         }
         desc.text = description
+
+        back.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
     }
 
     companion object {

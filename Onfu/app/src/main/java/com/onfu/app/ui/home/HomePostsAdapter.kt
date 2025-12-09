@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import coil.transform.CircleCropTransformation
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.onfu.app.R
 import com.onfu.app.domain.models.Post
 
@@ -18,6 +20,11 @@ class HomePostsAdapter(
     private val onLikeClicked: (Post) -> Unit,
     private val onItemClicked: (Post) -> Unit
 ) : ListAdapter<Post, HomePostsAdapter.VH>(DIFF) {
+
+    private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    // simple in-memory cache for user display info to avoid repeated requests
+    private val userCache = mutableMapOf<String, Pair<String?, String?>>() // ownerId -> (username, photoUrl)
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<Post>() {
@@ -44,14 +51,66 @@ class HomePostsAdapter(
         val post = getItem(position)
         holder.ivImage.load(post.imageUrl) { crossfade(true) }
         holder.tvDescription.text = post.description
-        // username unknown here; show ownerId as fallback
-        holder.tvUsername.text = post.title.ifEmpty { post.ownerId }
+        // show title if present, otherwise try cached username, otherwise ownerId fallback
+        val cached = userCache[post.ownerId]
+        if (!post.title.isNullOrEmpty()) {
+            holder.tvUsername.text = post.title
+        } else if (cached?.first != null) {
+            holder.tvUsername.text = cached.first
+        } else {
+            holder.tvUsername.text = post.ownerId
+            // fetch user doc asynchronously
+            firestore.collection("users").document(post.ownerId).get()
+                .addOnSuccessListener { doc ->
+                    val username = doc.getString("userid") ?: doc.getString("username") ?: doc.getString("visibleName")
+                    val photo = doc.getString("photoUrl")
+                    userCache[post.ownerId] = Pair(username, photo)
+                    // only update if this holder still represents same post owner
+                    if (holder.adapterPosition == position) {
+                        holder.tvUsername.text = username ?: post.ownerId
+                        if (!photo.isNullOrBlank()) holder.ivAvatar.load(photo) { transformations(CircleCropTransformation()) }
+                    }
+                }
+        }
+
+        // load avatar if cached or fetch
+        val photoUrl = cached?.second
+        if (!photoUrl.isNullOrBlank()) {
+            holder.ivAvatar.load(photoUrl) { transformations(CircleCropTransformation()) }
+        } else if (cached == null) {
+            // try loading owner doc for avatar (handled above also)
+            firestore.collection("users").document(post.ownerId).get()
+                .addOnSuccessListener { doc ->
+                    val photo = doc.getString("photoUrl")
+                    if (!photo.isNullOrBlank()) holder.ivAvatar.load(photo) { transformations(CircleCropTransformation()) }
+                }
+        }
 
         holder.itemView.setOnClickListener { onItemClicked(post) }
 
-        // likes and avatar are managed externally by fragment using live updates; default ui state shown
-        holder.tvLikes.text = "0"
-        holder.btnLike.setImageResource(R.drawable.ic_heart_outline)
+        // populate likes count and whether current user liked
+        val postRef = firestore.collection("posts").document(post.id)
+        postRef.get().addOnSuccessListener { doc ->
+            val count = (doc?.getLong("likesCount") ?: 0L)
+            holder.tvLikes.text = count.toString()
+        }
+
+        val currentUid = auth.currentUser?.uid
+        if (currentUid != null) {
+            postRef.collection("likes").document(currentUid).get()
+                .addOnSuccessListener { likeDoc ->
+                    if (likeDoc != null && likeDoc.exists()) {
+                        holder.btnLike.setImageResource(R.drawable.ic_heart_filled)
+                    } else {
+                        holder.btnLike.setImageResource(R.drawable.ic_heart_outline)
+                    }
+                }
+                .addOnFailureListener {
+                    holder.btnLike.setImageResource(R.drawable.ic_heart_outline)
+                }
+        } else {
+            holder.btnLike.setImageResource(R.drawable.ic_heart_outline)
+        }
 
         holder.btnLike.setOnClickListener {
             onLikeClicked(post)
