@@ -56,12 +56,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- Fondo circular translúcido negro -->
         <ImageView
             android:id="@+id/imgProfile"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="Foto de perfil"
-            android:src="@drawable/ic_app_logo" />
+            android:src="@drawable/ic_app_logo"
+            android:scaleType="centerCrop"
+            android:background="@drawable/circle_translucent_black"
+            android:clipToOutline="true"
+            android:clickable="true"
+            android:focusable="true" />
 
     </FrameLayout>
 

@@ -23,16 +23,16 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Show an empty Home placeholder by default; Feed (profile feed) is opened from the profile button
+        // Show Home feed by default
         if (childFragmentManager.findFragmentById(R.id.home_child_container) == null) {
             childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, PlaceholderFragment.newInstance("Home"))
+                .replace(R.id.home_child_container, com.onfu.app.ui.home.HomeFeedFragment())
                 .commit()
         }
 
         view.findViewById<View>(R.id.nav_home).setOnClickListener {
             childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, PlaceholderFragment.newInstance("Home"))
+                .replace(R.id.home_child_container, com.onfu.app.ui.home.HomeFeedFragment())
                 .commit()
         }
 

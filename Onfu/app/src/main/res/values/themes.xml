@@ -2,5 +2,13 @@
 <resources>
 
     <!-- Use an AppCompat-based theme so AppCompat widgets work correctly -->
-    <style name="Theme.Onfu" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.Onfu" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Ensure app windows have a solid white background (not the splash) -->
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
+    <!-- Splash theme only: used during cold-start. Applied to the LAUNCHER activity. -->
+    <style name="Theme.Onfu.Splash" parent="Theme.Onfu">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
 </resources>

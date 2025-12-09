@@ -9,6 +9,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import coil.load
+import coil.transform.CircleCropTransformation
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.onfu.app.R
@@ -20,6 +24,20 @@ class PreHomeFragment : Fragment() {
     private val binding get() = _binding!!
     private val firestore by lazy { FirebaseFirestore.getInstance() }
     private val auth by lazy { FirebaseAuth.getInstance() }
+    
+    // Activity result launcher to pick an image from device
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            // load selected image into the circular ImageView
+            try {
+                binding.imgProfile.load(it) {
+                    transformations(CircleCropTransformation())
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error loading image", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -107,6 +125,12 @@ class PreHomeFragment : Fragment() {
                 .addOnFailureListener { e ->
                     Toast.makeText(requireContext(), "Error checking username: ${e.message}", Toast.LENGTH_LONG).show()
                 }
+        }
+
+        // Click to pick profile image
+        binding.imgProfile.setOnClickListener {
+            // launch system picker for images
+            pickImage.launch("image/*")
         }
     }
 
