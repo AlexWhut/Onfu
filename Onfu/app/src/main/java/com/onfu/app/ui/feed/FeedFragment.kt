@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.widget.ImageView
@@ -44,38 +45,42 @@ import com.onfu.app.ui.feed.GridSpacingItemDecoration
  * Reemplaza los placeholders por tu cargador de imágenes (Glide/Coil/Picasso) y
  * conecta la navegación en `onPostClicked` para abrir el detalle del post.
  */
+
 class FeedFragment : Fragment() {
 
-    private var _binding: FragmentFeedBinding? = null
+     private var _binding: FragmentFeedBinding? = null
     private val binding get() = _binding!!
+    private var editMode: Boolean = false
+    private var editsMade: Boolean = false
 
     // Avatar change helpers
     private var selectedAvatarUri: Uri? = null
-    private val pickAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            selectedAvatarUri = it
-            // show preview immediately
-            binding.profileAvatar.load(it) {
-                transformations(CircleCropTransformation())
-            }
-            // start upload
-            uploadAvatarUri(it)
-        }
-    }
-
-    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
-            pickAvatarLauncher.launch("image/*")
-        } else {
-            Toast.makeText(requireContext(), "Permiso denegado: no se puede acceder a las fotos", Toast.LENGTH_LONG).show()
-        }
-    }
-
+    private lateinit var pickAvatarLauncher: ActivityResultLauncher<String>
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        // Initialize activity result launchers here to ensure Fragment is attached
+        pickAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                selectedAvatarUri = it
+                _binding?.profileAvatar?.load(it) {
+                    transformations(CircleCropTransformation())
+                }
+                uploadAvatarUri(it)
+            }
+        }
+
+        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                pickAvatarLauncher.launch("image/*")
+            } else {
+                Toast.makeText(requireContext(), "Permiso denegado: no se puede acceder a las fotos", Toast.LENGTH_LONG).show()
+            }
+        }
         _binding = FragmentFeedBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -102,6 +107,15 @@ class FeedFragment : Fragment() {
         rv.layoutManager = GridLayoutManager(requireContext(), spanCount)
         rv.addItemDecoration(GridSpacingItemDecoration(spanCount, spacingPx, false))
 
+        // Tabs behavior: default to Posts
+        setTabsState(showPosts = true)
+        binding.tabPosts.setOnClickListener {
+            setTabsState(showPosts = true)
+        }
+        binding.tabItems.setOnClickListener {
+            setTabsState(showPosts = false)
+        }
+
         binding.btnLogout.setOnClickListener {
             auth.signOut()
             val fm = requireActivity().supportFragmentManager
@@ -118,6 +132,16 @@ class FeedFragment : Fragment() {
                 fm.beginTransaction()
                     .replace(android.R.id.content, LoginFragment())
                     .commitAllowingStateLoss()
+            }
+        }
+
+        // Edit profile button: toggle edit mode UI
+        binding.btnEditProfile.setOnClickListener {
+            if (!editMode) {
+                enterEditMode()
+            } else {
+                // Always allow returning even if no edits were made
+                exitEditMode()
             }
         }
 
@@ -184,7 +208,9 @@ class FeedFragment : Fragment() {
 
                 // Allow tapping avatar to change profile photo
                 binding.profileAvatar.setOnClickListener {
-                    ensurePermissionAndPickAvatar()
+                    if (editMode) {
+                        ensurePermissionAndPickAvatar()
+                    }
                 }
 
             // Listen to user document to display name, bio and avatar updates in real time
@@ -233,6 +259,7 @@ class FeedFragment : Fragment() {
                     Toast.makeText(requireContext(), "No hay usuario autenticado", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
+                if (!editMode) return@setOnClickListener
 
                 if (!canEditVisibleName(currentUid)) {
                     Toast.makeText(requireContext(), "Has alcanzado el límite de 5 cambios hoy", Toast.LENGTH_LONG).show()
@@ -258,6 +285,8 @@ class FeedFragment : Fragment() {
                             .addOnSuccessListener {
                                 incrementEditCount(currentUid)
                                 Toast.makeText(requireContext(), "Nombre visible actualizado", Toast.LENGTH_SHORT).show()
+                                editsMade = true
+                                updateEditButtonLabel()
                             }
                             .addOnFailureListener { e ->
                                 Toast.makeText(requireContext(), "Error actualizando nombre: ${e.message}", Toast.LENGTH_LONG).show()
@@ -280,6 +309,7 @@ class FeedFragment : Fragment() {
                 Toast.makeText(requireContext(), "No hay usuario autenticado", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!editMode) return@setOnClickListener
 
             val edit = EditText(requireContext())
             edit.setText(binding.profileBio.text)
@@ -305,6 +335,95 @@ class FeedFragment : Fragment() {
         }
 
         // --- End of Changes ---
+    }
+
+    // Called after avatar upload completes successfully
+    private fun onAvatarUpdated() {
+        editsMade = true
+        updateEditButtonLabel()
+    }
+
+    private fun enterEditMode() {
+        editMode = true
+        editsMade = false
+        // Button style: black background, white text, label "Editando"
+        binding.btnEditProfile.text = "Editando"
+        binding.btnEditProfile.setBackgroundColor(android.graphics.Color.BLACK)
+        binding.btnEditProfile.setTextColor(android.graphics.Color.WHITE)
+
+        // Show edit indicators and start subtle shake animation
+        showEditIndicators(true)
+        startShake(binding.editIndicatorAvatar)
+        startShake(binding.editIndicatorName)
+        startShake(binding.editIndicatorBio)
+
+        // Enable tap-to-edit on avatar, name and bio
+        binding.profileAvatar.isClickable = true
+        binding.profileDisplayName.isClickable = true
+        binding.profileBio.isClickable = true
+    }
+
+    private fun exitEditMode() {
+        editMode = false
+        editsMade = false
+        // Restore button style and text
+        binding.btnEditProfile.text = "Editar perfil"
+        // Reset to default background/text colors (Material defaults)
+        binding.btnEditProfile.setBackgroundResource(android.R.drawable.btn_default)
+        binding.btnEditProfile.setTextColor(android.graphics.Color.BLACK)
+
+        // Hide indicators and stop animations
+        showEditIndicators(false)
+        // Disable tap-to-edit
+        binding.profileAvatar.isClickable = false
+        binding.profileDisplayName.isClickable = false
+        binding.profileBio.isClickable = false
+    }
+
+    private fun updateEditButtonLabel() {
+        if (editMode) {
+            // Show 'Volver' while in edit mode to allow exiting anytime
+            binding.btnEditProfile.text = "Volver"
+        } else {
+            binding.btnEditProfile.text = "Editar perfil"
+        }
+    }
+
+    private fun showEditIndicators(show: Boolean) {
+        val v = if (show) View.VISIBLE else View.GONE
+        binding.editIndicatorAvatar.visibility = v
+        binding.editIndicatorName.visibility = v
+        binding.editIndicatorBio.visibility = v
+    }
+
+    private fun startShake(target: View) {
+        // Subtle shake animation (horizontal)
+        val animator = android.animation.ObjectAnimator.ofFloat(target, View.TRANSLATION_X, -3f, 3f)
+        animator.repeatMode = android.animation.ValueAnimator.REVERSE
+        animator.repeatCount = android.animation.ValueAnimator.INFINITE
+        animator.duration = 600
+        animator.start()
+    }
+
+    private fun setTabsState(showPosts: Boolean) {
+        // Toggle content visibility
+        binding.rvFeed.visibility = if (showPosts) View.VISIBLE else View.GONE
+        binding.tvItemsComing.visibility = if (showPosts) View.GONE else View.VISIBLE
+
+        // Update tab visuals
+        if (showPosts) {
+            // Posts active
+            binding.tabPosts.setBackgroundColor(android.graphics.Color.parseColor("#222222"))
+            binding.tabPosts.setTextColor(android.graphics.Color.WHITE)
+            binding.tabItems.setBackgroundColor(android.graphics.Color.parseColor("#DDDDDD"))
+            binding.tabItems.setTextColor(android.graphics.Color.BLACK)
+        } else {
+            // Items active
+            binding.tabItems.setBackgroundColor(android.graphics.Color.parseColor("#222222"))
+            binding.tabItems.setTextColor(android.graphics.Color.WHITE)
+            binding.tabPosts.setBackgroundColor(android.graphics.Color.parseColor("#DDDDDD"))
+            binding.tabPosts.setTextColor(android.graphics.Color.BLACK)
+        }
     }
 
     private fun onPostClicked(post: Post) {

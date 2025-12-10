@@ -30,16 +30,31 @@
 			android:paddingStart="12dp"
 			android:paddingEnd="12dp" />
 
-		<ImageView
-			android:id="@+id/profile_avatar"
-			android:layout_width="100dp"
-			android:layout_height="100dp"
-			android:layout_marginTop="4dp"
-			android:contentDescription="avatar"
-			android:scaleType="centerCrop"
-			android:src="@null"
-			android:background="@drawable/oval_clip"
-			android:clipToOutline="true" />
+		<!-- Avatar envuelto para poder mostrar indicador de edición -->
+		<FrameLayout
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="4dp">
+
+			<ImageView
+				android:id="@+id/profile_avatar"
+				android:layout_width="100dp"
+				android:layout_height="100dp"
+				android:contentDescription="avatar"
+				android:scaleType="centerCrop"
+				android:src="@null"
+				android:background="@drawable/oval_clip"
+				android:clipToOutline="true" />
+
+			<View
+				android:id="@+id/edit_indicator_avatar"
+				android:layout_width="12dp"
+				android:layout_height="12dp"
+				android:layout_gravity="bottom|end"
+				android:layout_margin="4dp"
+				android:visibility="gone"
+				android:background="@drawable/shape_circle_black" />
+		</FrameLayout>
 
 		<!-- Visible name / display name (bigger, bold). Falls back to username if empty. -->
 		<LinearLayout
@@ -66,6 +81,15 @@
 				android:src="@drawable/ic_verified_badge"
 				android:visibility="gone"
 				android:contentDescription="@string/verified_badge" />
+
+			<!-- Indicador de edición para nombre -->
+			<View
+				android:id="@+id/edit_indicator_name"
+				android:layout_width="12dp"
+				android:layout_height="12dp"
+				android:layout_marginStart="6dp"
+				android:visibility="gone"
+				android:background="@drawable/shape_circle_black" />
 		</LinearLayout>
 
 		<!-- Username / handle (smaller, regular) -->
@@ -87,6 +111,16 @@
 			android:text="no bio"
 			android:textSize="14sp"
 			android:textColor="#222" />
+
+		<!-- Indicador de edición para bio -->
+		<View
+			android:id="@+id/edit_indicator_bio"
+			android:layout_width="12dp"
+			android:layout_height="12dp"
+			android:layout_marginTop="4dp"
+			android:visibility="gone"
+			android:background="@drawable/shape_circle_black" />
+
 
 		<LinearLayout
 			android:layout_width="match_parent"
@@ -155,6 +189,36 @@
 
 		</LinearLayout>
 
+		<!-- Actions for self profile (edit, share) now placed below counts -->
+		<LinearLayout
+			android:id="@+id/ll_profile_actions_feed"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:orientation="horizontal"
+			android:gravity="center"
+			android:paddingStart="24dp"
+			android:paddingEnd="24dp">
+
+			<Button
+				android:id="@+id/btn_edit_profile"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="Editar perfil" />
+
+			<Space
+				android:layout_width="16dp"
+				android:layout_height="wrap_content" />
+
+			<Button
+				android:id="@+id/btn_share_profile"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="Compartir" />
+		</LinearLayout>
+
 	</LinearLayout>
 
 	<!-- Two small bars below counts (tabs placeholder) -->
@@ -162,26 +226,55 @@
 		android:id="@+id/tabs_placeholder"
 		android:layout_width="match_parent"
 		android:layout_height="48dp"
+		android:layout_marginTop="12dp"
 		android:orientation="horizontal"
 		app:layout_constraintTop_toBottomOf="@id/profile_header"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent">
 
 
-		<!-- For  select content, views or items -->
-		<View
+		<!-- Tabs: Posts (left) and Items (right) -->
+		<TextView
+			android:id="@+id/tab_posts"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
 			android:layout_weight="1"
-			android:background="#222" />
+			android:gravity="center"
+			android:text="Posts"
+			android:textStyle="bold"
+			android:textColor="#FFFFFF"
+			android:background="#222"
+			android:clickable="true"
+			android:focusable="true" />
 
-		<View
+		<TextView
+			android:id="@+id/tab_items"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
 			android:layout_weight="1"
-			android:background="#ddd" />
+			android:gravity="center"
+			android:text="Items"
+			android:textStyle="bold"
+			android:textColor="#000000"
+			android:background="#ddd"
+			android:clickable="true"
+			android:focusable="true" />
 
 	</LinearLayout>
+
+	<!-- Placeholder under tabs for Items area -->
+	<TextView
+		android:id="@+id/tv_items_coming"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="12dp"
+		android:text="Próximamente"
+		android:textSize="14sp"
+		android:textStyle="italic"
+		android:textColor="#555"
+		app:layout_constraintTop_toBottomOf="@id/tabs_placeholder"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent" />
 
 	<!-- Stories / top bar: horizontal scroll, fixed max height 150dp -->
 	<!-- Feed grid: use RecyclerView with GridLayoutManager (3 columns)
@@ -194,7 +287,7 @@
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
 		android:clipToPadding="false"
-		app:layout_constraintTop_toBottomOf="@id/tabs_placeholder"
+		app:layout_constraintTop_toBottomOf="@id/tv_items_coming"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintBottom_toBottomOf="parent"

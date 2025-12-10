@@ -69,6 +69,11 @@ class OtherProfileFragment : Fragment() {
         binding.rvUserPosts.addItemDecoration(GridSpacingItemDecoration(3, spacingPx, false))
         binding.rvUserPosts.adapter = postsAdapter
 
+        // Tabs setup: Posts default visible
+        setTabsStateOther(showPosts = true)
+        binding.tabPostsOther.setOnClickListener { setTabsStateOther(true) }
+        binding.tabItemsOther.setOnClickListener { setTabsStateOther(false) }
+
         binding.btnProfileBack.setOnClickListener { parentFragmentManager.popBackStack() }
         val isSelf = auth.currentUser?.uid == targetUid
         binding.llProfileActions.visibility = if (isSelf) View.GONE else View.VISIBLE
@@ -81,6 +86,23 @@ class OtherProfileFragment : Fragment() {
         observeCounts()
         observePosts()
         refreshFollowing()
+    }
+
+    private fun setTabsStateOther(showPosts: Boolean) {
+        binding.rvUserPosts.visibility = if (showPosts) View.VISIBLE else View.GONE
+        binding.tvItemsComingOther.visibility = if (showPosts) View.GONE else View.VISIBLE
+
+        if (showPosts) {
+            binding.tabPostsOther.setBackgroundColor(android.graphics.Color.parseColor("#222222"))
+            binding.tabPostsOther.setTextColor(android.graphics.Color.WHITE)
+            binding.tabItemsOther.setBackgroundColor(android.graphics.Color.parseColor("#DDDDDD"))
+            binding.tabItemsOther.setTextColor(android.graphics.Color.BLACK)
+        } else {
+            binding.tabItemsOther.setBackgroundColor(android.graphics.Color.parseColor("#222222"))
+            binding.tabItemsOther.setTextColor(android.graphics.Color.WHITE)
+            binding.tabPostsOther.setBackgroundColor(android.graphics.Color.parseColor("#DDDDDD"))
+            binding.tabPostsOther.setTextColor(android.graphics.Color.BLACK)
+        }
     }
 
     private fun observeUserDocument() {
