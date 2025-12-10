@@ -205,7 +205,9 @@
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_weight="1"
-				android:text="Editar perfil" />
+				android:text="Editar perfil"
+				android:background="@drawable/bg_button_primary"
+				android:textColor="#FFFFFF" />
 
 			<Space
 				android:layout_width="16dp"
@@ -216,7 +218,9 @@
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_weight="1"
-				android:text="Compartir" />
+				android:text="Compartir"
+				android:background="@drawable/bg_button_secondary"
+				android:textColor="#000000" />
 		</LinearLayout>
 
 	</LinearLayout>

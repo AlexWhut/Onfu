@@ -48,7 +48,7 @@ import com.onfu.app.ui.feed.GridSpacingItemDecoration
 
 class FeedFragment : Fragment() {
 
-     private var _binding: FragmentFeedBinding? = null
+    private var _binding: FragmentFeedBinding? = null
     private val binding get() = _binding!!
     private var editMode: Boolean = false
     private var editsMade: Boolean = false
@@ -57,7 +57,7 @@ class FeedFragment : Fragment() {
     private var selectedAvatarUri: Uri? = null
     private lateinit var pickAvatarLauncher: ActivityResultLauncher<String>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -206,12 +206,12 @@ class FeedFragment : Fragment() {
                     .show(parentFragmentManager, "user_list")
             }
 
-                // Allow tapping avatar to change profile photo
-                binding.profileAvatar.setOnClickListener {
-                    if (editMode) {
-                        ensurePermissionAndPickAvatar()
-                    }
+            // Allow tapping avatar to change profile photo
+            binding.profileAvatar.setOnClickListener {
+                if (editMode) {
+                    ensurePermissionAndPickAvatar()
                 }
+            }
 
             // Listen to user document to display name, bio and avatar updates in real time
             firestore.collection("users").document(currentUid)
@@ -346,16 +346,11 @@ class FeedFragment : Fragment() {
     private fun enterEditMode() {
         editMode = true
         editsMade = false
-        // Button style: black background, white text, label "Editando"
-        binding.btnEditProfile.text = "Editando"
-        binding.btnEditProfile.setBackgroundColor(android.graphics.Color.BLACK)
-        binding.btnEditProfile.setTextColor(android.graphics.Color.WHITE)
+        // Keep pill style from XML; only update label
+        binding.btnEditProfile.text = "Volver"
 
-        // Show edit indicators and start subtle shake animation
+        // Show edit indicators
         showEditIndicators(true)
-        startShake(binding.editIndicatorAvatar)
-        startShake(binding.editIndicatorName)
-        startShake(binding.editIndicatorBio)
 
         // Enable tap-to-edit on avatar, name and bio
         binding.profileAvatar.isClickable = true
@@ -366,13 +361,10 @@ class FeedFragment : Fragment() {
     private fun exitEditMode() {
         editMode = false
         editsMade = false
-        // Restore button style and text
+        // Restore button label; keep pill style from XML
         binding.btnEditProfile.text = "Editar perfil"
-        // Reset to default background/text colors (Material defaults)
-        binding.btnEditProfile.setBackgroundResource(android.R.drawable.btn_default)
-        binding.btnEditProfile.setTextColor(android.graphics.Color.BLACK)
 
-        // Hide indicators and stop animations
+        // Hide indicators
         showEditIndicators(false)
         // Disable tap-to-edit
         binding.profileAvatar.isClickable = false
