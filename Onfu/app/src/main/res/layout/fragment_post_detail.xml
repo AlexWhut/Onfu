@@ -3,29 +3,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Back button (same as profile) -->
-    <ImageButton
-        android:id="@+id/btn_post_back"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="12dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="8dp"
-        android:scaleType="center"
-        android:src="@drawable/ic_arrow_back"
-        android:tint="#FFFFFF"
-        android:contentDescription="@string/back"
-        android:layout_gravity="top|start" />
-
     <!-- Full-bleed image like Instagram -->
     <ImageView
         android:id="@+id/iv_detail_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:contentDescription="Post image" />
+        android:contentDescription="Post image"
+        android:scaleType="centerCrop" />
 
-    <!-- Description overlaid at the bottom with subtle background -->
     <TextView
         android:id="@+id/tv_detail_description"
         android:layout_width="match_parent"
@@ -35,5 +20,19 @@
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:background="#80000000" />
+
+    <!-- Back button placed after image so it's drawn on top -->
+    <ImageButton
+        android:id="@+id/btn_post_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="12dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_arrow_back"
+        android:tint="#FFFFFF"
+        android:background="@drawable/circle_translucent_black"
+        android:contentDescription="@string/back"
+        android:layout_gravity="top|start"
+        android:elevation="8dp" />
 
 </FrameLayout>

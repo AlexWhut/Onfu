@@ -359,9 +359,11 @@ class FeedFragment : Fragment() {
                                 .build()
                             auth.currentUser?.updateProfile(profileUpdates)
 
-                            // update UI immediately
-                            binding.profileAvatar.load(downloadUrl) {
-                                transformations(CircleCropTransformation())
+                            // update UI immediately (safely, view may have been destroyed)
+                            _binding?.let { b ->
+                                b.profileAvatar.load(downloadUrl) {
+                                    transformations(CircleCropTransformation())
+                                }
                             }
 
                             Toast.makeText(requireContext(), "Foto de perfil actualizada", Toast.LENGTH_SHORT).show()

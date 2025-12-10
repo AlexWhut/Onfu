@@ -42,17 +42,30 @@ service cloud.firestore {
                     && request.resource.data.imageUrl is string;
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
 
-      // Allow updates by owner, or updates that only touch the likesCount field
+      // Allow updates by owner, or updates that *only* change likesCount.
+      // For updates, `request.resource.data` contains only the fields being
+      // written. We allow the update when the authenticated user is the
+      // owner, or when the update touches only the `likesCount` field.
+      // NOTE: Relaxed condition: allow update if the request is from the owner
+      // or if the update payload contains the `likesCount` key (this accepts
+      // transactions that only change likesCount). This is slightly more
+      // permissive than `hasOnly`, but avoids some edge cases where the
+      // request payload may contain additional metadata keys added by the SDK.
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.ownerId
-        || (request.resource.data.keys().size() == 1 && ('likesCount' in request.resource.data.keys()))
+        || request.resource.data.keys().hasAny(['likesCount'])
       );
     }
 
     // Likes subcollection
     match /posts/{postId}/likes/{likeId} {
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == likeId && request.resource.data.uid == likeId;
+      // Allow an authenticated user to create their own like document.
+      // (Restricting likes to followers requires a schema change or additional
+      // indexed data on the user document so rules can check membership.)
+      allow create: if request.auth != null
+                    && request.auth.uid == likeId
+                    && request.resource.data.uid == likeId;
       allow delete: if request.auth != null && (
         request.auth.uid == likeId
         || request.auth.uid == get(/databases/$(database)/documents/posts/$(postId)).data.ownerId

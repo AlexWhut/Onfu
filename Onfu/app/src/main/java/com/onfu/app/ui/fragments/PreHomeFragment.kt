@@ -79,6 +79,13 @@ class PreHomeFragment : Fragment() {
                 return@setOnClickListener
             }
 
+                // Validate allowed characters (no spaces or symbols)
+                if (!isUsernameValid(userid)) {
+                    binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                    binding.tvAvailability.text = "Solo letras minúsculas, números y _ permitidos"
+                    return@setOnClickListener
+                }
+
             // Check availability one more time before saving using `usernames` collection (single-doc lookup)
                 val usernameDocRef = firestore.collection("usernames").document(userid)
             usernameDocRef.get()
@@ -140,6 +147,12 @@ class PreHomeFragment : Fragment() {
             binding.tvAvailability.text = ""
             return
         }
+        // Validate characters first (no spaces or symbols)
+        if (!isUsernameValid(normalized)) {
+            binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+            binding.tvAvailability.text = "Formato inválido: solo letras minúsculas, números y _"
+            return
+        }
         // Check existence by reading usernames/{candidate}
             firestore.collection("usernames").document(normalized).get()
             .addOnSuccessListener { doc ->
@@ -160,6 +173,12 @@ class PreHomeFragment : Fragment() {
                 binding.tvAvailability.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
                 binding.tvAvailability.text = "Error"
             }
+    }
+
+    // Username policy: only lowercase letters, digits and underscore; max 10 chars.
+    private fun isUsernameValid(u: String): Boolean {
+        val pattern = Regex("^[a-z0-9_]{1,10}$")
+        return pattern.matches(u)
     }
 
     override fun onDestroyView() {
