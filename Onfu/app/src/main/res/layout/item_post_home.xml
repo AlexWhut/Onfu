@@ -13,7 +13,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintDimensionRatio="1:1" />
+        app:layout_constraintDimensionRatio="27:34" />
 
     <!-- Bottom overlay bar with avatar, user and actions -->
     <View
