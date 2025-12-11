@@ -102,24 +102,33 @@
 			android:textSize="14sp"
 			android:textColor="#444" />
 
-		<!-- Profile bio / description (editable, max 50 words) -->
-		<TextView
-			android:id="@+id/profile_bio"
+
+		<!-- Bio + edit indicator inline to the right -->
+		<LinearLayout
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="6dp"
-			android:text="no bio"
-			android:textSize="14sp"
-			android:textColor="#222" />
+			android:orientation="horizontal"
+			android:gravity="center_vertical">
 
-		<!-- Indicador de edición para bio -->
-		<View
-			android:id="@+id/edit_indicator_bio"
-			android:layout_width="12dp"
-			android:layout_height="12dp"
-			android:layout_marginTop="4dp"
-			android:visibility="gone"
-			android:background="@drawable/shape_circle_black" />
+			<!-- Profile bio / description (editable, max 50 words) -->
+			<TextView
+				android:id="@+id/profile_bio"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="no bio"
+				android:textSize="14sp"
+				android:textColor="#222" />
+
+			<!-- Indicador de edición para bio (inline to the right) -->
+			<View
+				android:id="@+id/edit_indicator_bio"
+				android:layout_width="12dp"
+				android:layout_height="12dp"
+				android:layout_marginStart="6dp"
+				android:visibility="gone"
+				android:background="@drawable/shape_circle_black" />
+		</LinearLayout>
 
 
 		<LinearLayout
