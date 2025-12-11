@@ -13,63 +13,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/home_bottom_nav"
         android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:background="#EEEEEE"
-        android:gravity="center"
+        android:layout_height="70dp"
+        android:background="#FFFFFF"
+        app:itemIconTint="@color/bottom_nav_icon_color"
+        app:itemIconSize="30dp"
+        app:itemRippleColor="?attr/colorControlHighlight"
+        app:menu="@menu/bottom_nav_menu"
+        app:labelVisibilityMode="labeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageButton
-            android:id="@+id/nav_home"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_view"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="home" />
-
-        <ImageButton
-            android:id="@+id/nav_search"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_search"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="search" />
-
-        <ImageButton
-            android:id="@+id/nav_add"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_input_add"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="add" />
-
-        <ImageButton
-            android:id="@+id/nav_messages"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="messages" />
-
-        <ImageButton
-            android:id="@+id/nav_profile"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_myplaces"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="profile" />
-
-    </LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Note: previously had a centered overlapping add button here. Removed to avoid duplicate ID `nav_add`. -->
 

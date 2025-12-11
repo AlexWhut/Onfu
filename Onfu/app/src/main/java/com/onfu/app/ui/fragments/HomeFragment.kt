@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.onfu.app.R
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.onfu.app.ui.search.SearchFragment
 import com.onfu.app.ui.messages.ChatListFragment
 
@@ -30,36 +31,59 @@ class HomeFragment : Fragment() {
                 .commit()
         }
 
-        view.findViewById<View>(R.id.nav_home).setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, com.onfu.app.ui.home.HomeFeedFragment())
-                .commit()
+        val nav = view.findViewById<BottomNavigationView>(R.id.home_bottom_nav)
+
+        // Default selection
+        nav.selectedItemId = R.id.nav_home
+
+        // DEBUG: enforce our drawables at runtime and disable tinting so we can verify
+        // that the BottomNavigationView is using the correct resources.
+        try {
+            nav.itemIconTintList = null
+            nav.menu.findItem(R.id.nav_home)?.icon = resources.getDrawable(R.drawable.ic_nav_home, null)
+            nav.menu.findItem(R.id.nav_search)?.icon = resources.getDrawable(R.drawable.ic_nav_search, null)
+            nav.menu.findItem(R.id.nav_add)?.icon = resources.getDrawable(R.drawable.ic_nav_add, null)
+            nav.menu.findItem(R.id.nav_messages)?.icon = resources.getDrawable(R.drawable.ic_nav_messages, null)
+            nav.menu.findItem(R.id.nav_profile)?.icon = resources.getDrawable(R.drawable.ic_nav_profile, null)
+        } catch (e: Exception) {
+            // ignore; debug only
         }
 
-        view.findViewById<View>(R.id.nav_search).setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, SearchFragment())
-                .commit()
-        }
-
-        view.findViewById<View>(R.id.nav_messages).setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, ChatListFragment())
-                .commit()
-        }
-
-        view.findViewById<View>(R.id.nav_profile).setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, com.onfu.app.ui.feed.FeedFragment())
-                .commit()
-        }
-
-        // Add button (center '+') opens the post Upload screen (not avatar)
-        view.findViewById<View>(R.id.nav_add).setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.home_child_container, com.onfu.app.ui.upload.UploadFragment())
-                .addToBackStack("upload")
-                .commit()
+        nav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    childFragmentManager.beginTransaction()
+                        .replace(R.id.home_child_container, com.onfu.app.ui.home.HomeFeedFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_search -> {
+                    childFragmentManager.beginTransaction()
+                        .replace(R.id.home_child_container, SearchFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_messages -> {
+                    childFragmentManager.beginTransaction()
+                        .replace(R.id.home_child_container, ChatListFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_profile -> {
+                    childFragmentManager.beginTransaction()
+                        .replace(R.id.home_child_container, com.onfu.app.ui.feed.FeedFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_add -> {
+                    childFragmentManager.beginTransaction()
+                        .replace(R.id.home_child_container, com.onfu.app.ui.upload.UploadFragment())
+                        .addToBackStack("upload")
+                        .commit()
+                    true
+                }
+                else -> false
+            }
         }
     }
 }
