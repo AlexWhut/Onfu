@@ -145,7 +145,8 @@ class FeedFragment : Fragment() {
             }
         }
 
-        // Load posts from Firestore and render images only in the grid
+        // Load posts ordered by time and filter client-side to only the current user's posts.
+        // This matches the previous working approach and avoids index/permission issues.
         binding.rvFeed.adapter = postsAdapter
         firestore.collection("posts")
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
@@ -420,10 +421,7 @@ class FeedFragment : Fragment() {
 
     private fun onPostClicked(post: Post) {
         // Abre un fragmento de detalle con imagen completa y descripción
-        val detail = com.onfu.app.ui.post.PostDetailFragment.newInstance(
-            post.imageUrl,
-            post.description
-        )
+        val detail = com.onfu.app.ui.post.PostDetailFragment.newInstanceForUser(post.ownerId)
         parentFragmentManager
             .beginTransaction()
             .replace(R.id.home_child_container, detail)

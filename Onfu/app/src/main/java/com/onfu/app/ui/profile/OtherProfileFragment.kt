@@ -251,10 +251,7 @@ class OtherProfileFragment : Fragment() {
     }
 
     private fun onPostClicked(post: Post) {
-        val detail = com.onfu.app.ui.post.PostDetailFragment.newInstance(
-            post.imageUrl,
-            post.description
-        )
+        val detail = com.onfu.app.ui.post.PostDetailFragment.newInstanceForUser(post.ownerId)
         parentFragmentManager
             .beginTransaction()
             .replace(R.id.home_child_container, detail)
