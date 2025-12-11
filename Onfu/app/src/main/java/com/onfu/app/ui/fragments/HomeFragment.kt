@@ -7,6 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.onfu.app.R
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationBarView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.onfu.app.ui.search.SearchFragment
 import com.onfu.app.ui.messages.ChatListFragment
 
@@ -35,6 +38,16 @@ class HomeFragment : Fragment() {
 
         // Default selection
         nav.selectedItemId = R.id.nav_home
+
+        // Ensure icons are centered: remove extra bottom insets padding and hide labels
+        try {
+            nav.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_UNLABELED
+        } catch (_: Throwable) { /* ignore for older libs */ }
+        ViewCompat.setOnApplyWindowInsetsListener(nav) { v, insets ->
+            // Prevent system bottom inset from adding extra padding that visually shifts icons upward
+            v.setPaddingRelative(v.paddingStart, 0, v.paddingEnd, 0)
+            insets
+        }
 
         // DEBUG: enforce our drawables at runtime and disable tinting so we can verify
         // that the BottomNavigationView is using the correct resources.
