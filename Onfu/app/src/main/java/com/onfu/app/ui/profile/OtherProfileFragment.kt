@@ -122,12 +122,16 @@ class OtherProfileFragment : Fragment() {
                 binding.profileVerifiedBadge.visibility = if (isVerified) View.VISIBLE else View.GONE
 
                 val photoUrl = doc.getString("photoUrl")
+                val logoId = resources.getIdentifier("logo_profile", "drawable", requireContext().packageName)
+                val fallbackId = if (logoId != 0) logoId else R.drawable.tempologo
                 if (!photoUrl.isNullOrBlank()) {
                     binding.profileAvatar.load(photoUrl) {
-                        placeholder(android.R.drawable.sym_def_app_icon)
-                        error(android.R.drawable.sym_def_app_icon)
+                        placeholder(fallbackId)
+                        error(fallbackId)
                         transformations(CircleCropTransformation())
                     }
+                } else {
+                    binding.profileAvatar.setImageResource(fallbackId)
                 }
             }
     }

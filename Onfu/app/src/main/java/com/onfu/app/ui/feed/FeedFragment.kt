@@ -69,6 +69,11 @@ class FeedFragment : Fragment() {
                 selectedAvatarUri = it
                 _binding?.profileAvatar?.load(it) {
                     transformations(CircleCropTransformation())
+                    // use LogoProfile if available, fallback to tempologo
+                    val logoId = resources.getIdentifier("logo_profile", "drawable", requireContext().packageName)
+                    val placeholderId = if (logoId != 0) logoId else R.drawable.tempologo
+                    placeholder(placeholderId)
+                    error(placeholderId)
                 }
                 uploadAvatarUri(it)
             }
@@ -247,10 +252,16 @@ class FeedFragment : Fragment() {
                     binding.profileBio.text = if (bioLimited.isBlank()) "no bio" else bioLimited
 
                     val photoUrl = doc.getString("photoUrl") ?: auth.currentUser?.photoUrl?.toString()
+                    val logoId = resources.getIdentifier("LogoProfile", "drawable", requireContext().packageName)
+                    val fallbackId = if (logoId != 0) logoId else R.drawable.tempologo
                     if (!photoUrl.isNullOrBlank()) {
                         binding.profileAvatar.load(photoUrl) {
                             transformations(CircleCropTransformation())
+                            placeholder(fallbackId)
+                            error(fallbackId)
                         }
+                    } else {
+                        binding.profileAvatar.setImageResource(fallbackId)
                     }
                 }
 
@@ -470,8 +481,12 @@ class FeedFragment : Fragment() {
 
                             // update UI immediately (safely, view may have been destroyed)
                             _binding?.let { b ->
+                                val logoId = resources.getIdentifier("logo_profile", "drawable", requireContext().packageName)
+                                val placeholderId = if (logoId != 0) logoId else R.drawable.tempologo
                                 b.profileAvatar.load(downloadUrl) {
                                     transformations(CircleCropTransformation())
+                                    placeholder(placeholderId)
+                                    error(placeholderId)
                                 }
                             }
 
