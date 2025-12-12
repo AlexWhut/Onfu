@@ -34,8 +34,9 @@
             android:id="@+id/btnBack"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_media_previous"
-            android:contentDescription="Back" />
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back"
+            android:background="?attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

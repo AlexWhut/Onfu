@@ -5,6 +5,9 @@
     <style name="Theme.Onfu" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Ensure app windows have a solid white background (not the splash) -->
         <item name="android:windowBackground">@android:color/white</item>
+        <!-- Make status bar match the app background and use dark icons on light backgrounds -->
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <!-- Splash theme only: used during cold-start. Applied to the LAUNCHER activity. -->

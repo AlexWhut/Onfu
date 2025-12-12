@@ -37,7 +37,13 @@ class ChatListAdapter(private val onClick: (String) -> Unit) :
                 b.displayName.text = name
                 val photo = doc.getString("photoUrl")
                 if (!photo.isNullOrBlank()) {
-                    b.avatar.load(photo) { transformations(CircleCropTransformation()) }
+                    val target = if (b.avatar.width > 0) b.avatar.width else (48 * b.avatar.context.resources.displayMetrics.density).toInt()
+                    b.avatar.load(photo) {
+                        transformations(CircleCropTransformation())
+                        size(target)
+                        placeholder(com.onfu.app.R.drawable.logo_profile)
+                        error(com.onfu.app.R.drawable.logo_profile)
+                    }
                 }
             }
         b.root.setOnClickListener { onClick(item.id) }

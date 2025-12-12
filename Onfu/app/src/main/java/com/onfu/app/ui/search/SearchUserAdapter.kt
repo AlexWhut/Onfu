@@ -38,10 +38,13 @@ class SearchUserAdapter(
         if (isEmptyAvatar) {
             holder.avatar.setImageResource(R.drawable.logo_profile)
         } else {
+            val target = if (holder.avatar.width > 0) holder.avatar.width else (56 * holder.avatar.context.resources.displayMetrics.density).toInt()
             holder.avatar.load(avatarUrl) {
                 placeholder(R.drawable.logo_profile)
                 error(R.drawable.logo_profile)
                 fallback(R.drawable.logo_profile)
+                size(target)
+                transformations(coil.transform.CircleCropTransformation())
             }
         }
         holder.followButton.isEnabled = !item.isLoading

@@ -49,7 +49,11 @@ class HomePostsAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val post = getItem(position)
-        holder.ivImage.load(post.imageUrl) { crossfade(true) }
+        holder.ivImage.load(post.imageUrl) { 
+            crossfade(true)
+            // Request original/full quality for post images so they look sharp in feed/detail
+            size(coil.size.Size.ORIGINAL)
+        }
         holder.tvDescription.text = post.description
         // show title if present, otherwise try cached username, otherwise ownerId fallback
         val cached = userCache[post.ownerId]
@@ -68,7 +72,10 @@ class HomePostsAdapter(
                     // only update if this holder still represents same post owner
                     if (holder.adapterPosition == position) {
                         holder.tvUsername.text = username ?: post.ownerId
-                        if (!photo.isNullOrBlank()) holder.ivAvatar.load(photo) { transformations(CircleCropTransformation()) }
+                        if (!photo.isNullOrBlank()) {
+                            val t = if (holder.ivAvatar.width > 0) holder.ivAvatar.width else (40 * holder.ivAvatar.context.resources.displayMetrics.density).toInt()
+                            holder.ivAvatar.load(photo) { transformations(CircleCropTransformation()); size(t); placeholder(R.drawable.logo_profile) }
+                        }
                     }
                 }
         }
@@ -76,7 +83,8 @@ class HomePostsAdapter(
         // load avatar if cached or fetch
         val photoUrl = cached?.second
         if (!photoUrl.isNullOrBlank()) {
-            holder.ivAvatar.load(photoUrl) { transformations(CircleCropTransformation()) }
+            val t = if (holder.ivAvatar.width > 0) holder.ivAvatar.width else (40 * holder.ivAvatar.context.resources.displayMetrics.density).toInt()
+            holder.ivAvatar.load(photoUrl) { transformations(CircleCropTransformation()); size(t); placeholder(R.drawable.logo_profile) }
         } else if (cached == null) {
             // try loading owner doc for avatar (handled above also)
             firestore.collection("users").document(post.ownerId).get()

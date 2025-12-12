@@ -29,7 +29,12 @@ class PostsGridAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val post = items[position]
-        holder.image.load(post.imageUrl)
+        // load a smaller thumbnail for grid items to speed up list scrolling
+        val target = if (holder.image.width > 0) holder.image.width else (120 * holder.image.context.resources.displayMetrics.density).toInt()
+        holder.image.load(post.imageUrl) {
+            size(target)
+            crossfade(true)
+        }
         holder.caption.visibility = View.GONE
         holder.itemView.setOnClickListener { onClick(post) }
     }
