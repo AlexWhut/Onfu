@@ -33,9 +33,16 @@ class SearchUserAdapter(
         holder.displayName.text = item.user.displayName
         holder.username.text = "@${item.user.username}"
         holder.verified.visibility = if (item.user.isVerified) View.VISIBLE else View.GONE
-        holder.avatar.load(item.user.avatarUrl) {
-            placeholder(android.R.drawable.sym_def_app_icon)
-            error(android.R.drawable.sym_def_app_icon)
+        val avatarUrl = item.user.avatarUrl
+        val isEmptyAvatar = avatarUrl.isBlank() || avatarUrl.equals("null", ignoreCase = true) || avatarUrl.equals("none", ignoreCase = true)
+        if (isEmptyAvatar) {
+            holder.avatar.setImageResource(R.drawable.logo_profile)
+        } else {
+            holder.avatar.load(avatarUrl) {
+                placeholder(R.drawable.logo_profile)
+                error(R.drawable.logo_profile)
+                fallback(R.drawable.logo_profile)
+            }
         }
         holder.followButton.isEnabled = !item.isLoading
         holder.followButton.text = when {
